@@ -13,7 +13,7 @@ export default defineConfig({
       { text: '成功案例', link: '/cases/' },
       { text: '资源中心', link: '/resources/' },
       { text: '关于我们', link: '/about/' },
-      { text: '主官网', link: 'https://www.whohi.cn/', target: '_blank' },
+      { text: '官网', link: 'https://www.whohi.cn/', target: '_blank' },
     ],
     sidebar: {
       '/products/': [
