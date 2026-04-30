@@ -9,6 +9,7 @@ export default defineConfig({
     logoText: '掌上乾坤',
     nav: [
       { text: '产品功能', link: '/products/' },
+      { text: 'Z1操作手册', link: '/z1/' },
       { text: '解决方案', link: '/solutions/' },
       { text: '成功案例', link: '/cases/' },
       { text: '资源中心', link: '/resources/' },
@@ -65,6 +66,15 @@ export default defineConfig({
           items: [
             { text: '公司简介', link: '/about/' },
             { text: '更新日志', link: '/about/changelog' },
+          ],
+        },
+      ],
+      '/z1/': [
+        {
+          text: 'Z1操作手册',
+          items: [
+            { text: '会员业务', link: '/z1/member-guide/' },
+            { text: '储值功能', link: '/z1/member-guide/stored-value' },
           ],
         },
       ],
