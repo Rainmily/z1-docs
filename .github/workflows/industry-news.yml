@@ -1,0 +1,38 @@
+name: 手机行业资讯更新
+
+on:
+  schedule:
+    # 每小时运行一次
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    # 支持手动触发
+
+jobs:
+  update-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 检出新仓库
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装依赖
+        run: npm install
+
+      - name: 运行资讯更新脚本
+        run: npm run update-news
+        env:
+          EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+
+      - name: 提交更新
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "GitHub Actions"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: 更新手机行业资讯 $(date +'%Y-%m-%d %H:%M')"
+          git push

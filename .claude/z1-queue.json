@@ -1,0 +1,587 @@
+{
+  "queue": [
+    {
+      "name": "会员   功能   产品文档",
+      "token": "PxH6dvAmZomkqxxI3tScR5Q4nm2",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "会员生日关怀 产品文档",
+      "token": "G2kJdFQbAolYT7xPsoicNvUUnQc",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "会员定时提醒   功能  产品文档",
+      "token": "FOPcdgPKDoeY0jxlCYwcI5G1n4Z",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "会员查询 产品文档",
+      "token": "RlLzd9S6yoODBdxgavmcoHYPnWc",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "付费会员 产品文档",
+      "token": "Q34QdtfQboTr2gx23AHcyYFMncB",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "会员回访   功能   产品文档",
+      "token": "KSKmdcjVloadAqxGnXkcnOlZnBf",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "会员总览",
+      "token": "EDnddN8DtoB7nbxdbYCcVEjunun",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "专属导购  功能   产品文档",
+      "token": "V6ILdCVs1oeXQhxSCm5cMAzXn0g",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "会员行为    功能  产品文档",
+      "token": "BqZxdeRxAonjXCx6v5DcoBK5nPg",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "会员数据驾驶舱   产品文档",
+      "token": "Mvk1dVbEto45ZDxHIoAcr8xBnRc",
+      "type": "docx",
+      "category": "member-guide",
+      "folder": "会员模块"
+    },
+    {
+      "name": "销售模块 产品文档",
+      "token": "UtrtdYAq0oRkvQxe2x3cfDcHnse",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "销售模块"
+    },
+    {
+      "name": "销售订单",
+      "token": "TThbdVumbobKjuxQmw0cAQSJnOf",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "销售模块"
+    },
+    {
+      "name": "预订订单 产品文档",
+      "token": "Pq0GdlD9UoRbQDx46UIc3Eq5nth",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "销售模块"
+    },
+    {
+      "name": "赠品功能 产品文档",
+      "token": "OjRCd7kumoyjcYxs8xKc8FeYnfh",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "销售模块"
+    },
+    {
+      "name": "[销售订单]退货/退款",
+      "token": "CvBudhW3UovPtSxgYAVcINXJnuD",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "销售模块"
+    },
+    {
+      "name": "以旧换新 产品文档",
+      "token": "UaDidCc88oy27ZxHOXZc5uMwnNg",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "销售模块"
+    },
+    {
+      "name": "优惠审批流程 产品文档",
+      "token": "LAatd03ZaoODITxPchJcprJun9b",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "销售模块"
+    },
+    {
+      "name": "商品利润分析    产品文档",
+      "token": "W3AAd2GsKo9mVLx0EJ9cGSu8nOH",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "销售模块"
+    },
+    {
+      "name": "库存模块 产品文档",
+      "token": "EY1Adk6tUocpkfxgEFQcaGDZn0d",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "库存模块"
+    },
+    {
+      "name": "调拨单 产品文档",
+      "token": "N0xfdzyukonJTFxVZx4cll6JnPb",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "库存模块"
+    },
+    {
+      "name": "返厂维修 产品文档",
+      "token": "UV3Fdp4pXoTB6qx0GEYcHFc3nLe",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "库存模块"
+    },
+    {
+      "name": "序列号追踪功能",
+      "token": "Xzyido2jVoyywzx8eKRcTiR9nlc",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "库存模块"
+    },
+    {
+      "name": "快捷分货  产品文档",
+      "token": "XayFdstIVo3zICxzrXfc9ktVnLf",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "库存模块"
+    },
+    {
+      "name": "智能库存-产品文档",
+      "token": "ID89dRQ3Nopfkcx1AUCcl1RsnTe",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "库存模块"
+    },
+    {
+      "name": "非标模块 产品文档",
+      "token": "TaJBdx7wcorFRCxNwK5cgFaAnYe",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "库存模块"
+    },
+    {
+      "name": "商品 (SPU/SKU/货品/非标等) 产品文档",
+      "token": "YQyBdjpqyoUS94xbymUcdBS7n8f",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "商品模块"
+    },
+    {
+      "name": "商品管理 产品文档",
+      "token": "IIDrd7C68o56HpxYBDPcJWdonOf",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "商品模块"
+    },
+    {
+      "name": "返利政策(新)",
+      "token": "FS28dq45ooWCDdxbqsqcuKmwnZf",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "商品模块"
+    },
+    {
+      "name": "返利与价保  模块  产品文档",
+      "token": "OQmndlYJhoION4x65KlcmP0en2e",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "商品模块"
+    },
+    {
+      "name": "卡券  产品文档",
+      "token": "MHJQdQjsJo7oTrx1ka9cjis1n7e",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "营销模块"
+    },
+    {
+      "name": "卡券转赠 产品文档",
+      "token": "YsgCdH973oafbExbJkccDYwInqh",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "营销模块"
+    },
+    {
+      "name": "自定义商城活动页  产品文档",
+      "token": "B1YCdxF5coFEeFx1KMych8ITnOd",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "营销模块"
+    },
+    {
+      "name": "门店客流统计",
+      "token": "MreWd3FDKoq9ugxL9OVct0nhnrd",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "营销模块"
+    },
+    {
+      "name": "签码管理",
+      "token": "WN0VdV89goc6u9xWV29cEnyqnlp",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "营销模块"
+    },
+    {
+      "name": "职员模块 产品文档",
+      "token": "Wi1ddPWAWoLRjPxzQvbc3lFXnez",
+      "type": "docx",
+      "category": "operations",
+      "folder": "人事模块"
+    },
+    {
+      "name": "部门模块 产品文档",
+      "token": "FNjVdSCAvowsAlxC4Rgc91bBn4e",
+      "type": "docx",
+      "category": "operations",
+      "folder": "人事模块"
+    },
+    {
+      "name": "门店管理",
+      "token": "HCjzdiEUlocSIFx55k7cd3cXnse",
+      "type": "docx",
+      "category": "operations",
+      "folder": "人事模块"
+    },
+    {
+      "name": "考勤模块",
+      "token": "ZD8Zd6tgVowMKfxzbfXcy7kVnmc",
+      "type": "docx",
+      "category": "operations",
+      "folder": "人事模块"
+    },
+    {
+      "name": "工资表",
+      "token": "UPIKdfmtYo395TxLxi2ckkvBnqe",
+      "type": "docx",
+      "category": "operations",
+      "folder": "人事模块"
+    },
+    {
+      "name": "绩效模块（绩效年度分/绩效考核表）",
+      "token": "doxcnW9gdLuuPuqGeeCJGUe12tg",
+      "type": "docx",
+      "category": "operations",
+      "folder": "人事模块"
+    },
+    {
+      "name": "系统设置-销售设置 产品文档",
+      "token": "AXizd4aCCougPgxSWHhcxbvXnsh",
+      "type": "docx",
+      "category": "operations",
+      "folder": "系统设置"
+    },
+    {
+      "name": "首页 产品文档",
+      "token": "X9ENdWyrRorBgUxZ7Wxc0GRQnpc",
+      "type": "docx",
+      "category": "operations",
+      "folder": "系统设置"
+    },
+    {
+      "name": "权限包设计",
+      "token": "HG5cdOx6YowVNmxQP5IctcfBnLX",
+      "type": "docx",
+      "category": "operations",
+      "folder": "系统设置"
+    },
+    {
+      "name": "往来对账单 产品文档",
+      "token": "ALChdGVvqo9RuDxkngDcXgi3nAc",
+      "type": "docx",
+      "category": "operations",
+      "folder": "财务模块"
+    },
+    {
+      "name": "财务代收 产品文档",
+      "token": "AdR4ds1PzonCkXxfxVHc3tVSnGg",
+      "type": "docx",
+      "category": "operations",
+      "folder": "财务模块"
+    },
+    {
+      "name": "报损单 产品文档",
+      "token": "FfUZdN1gQotip7x5vJ6c9zdJn1b",
+      "type": "docx",
+      "category": "operations",
+      "folder": "财务模块"
+    },
+    {
+      "name": "财务支出单",
+      "token": "QyKndtXDaoEbQQxbUfcca8BUnT4",
+      "type": "docx",
+      "category": "operations",
+      "folder": "财务模块"
+    },
+    {
+      "name": "发票管理",
+      "token": "Xb0zdFBw4ojeOExDxpDcUUQan5f",
+      "type": "docx",
+      "category": "operations",
+      "folder": "财务模块"
+    },
+    {
+      "name": "会计科目管理",
+      "token": "ZrfUdQjbloc6ExxgLtlc1v92n2b",
+      "type": "docx",
+      "category": "operations",
+      "folder": "财务模块"
+    },
+    {
+      "name": "财务月结",
+      "token": "TfHAd2UtPouFu1xbscZc8cDgnvb",
+      "type": "docx",
+      "category": "operations",
+      "folder": "财务模块"
+    },
+    {
+      "name": "回收模块 产品文档",
+      "token": "Z0pzdM0kVolL1gxc4BfcRGy1nrc",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "回收模块"
+    },
+    {
+      "name": "平台转售管理 产品文档",
+      "token": "KymadRZFvoTuBXxXCbmcfp10n4g",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "回收模块"
+    },
+    {
+      "name": "标签打印 产品文档",
+      "token": "Ks3gd2mflojFy4x6IRRcIHrSnqg",
+      "type": "docx",
+      "category": "sales-guide",
+      "folder": "回收模块"
+    },
+    {
+      "name": "采购功能 产品文档",
+      "token": "A9dddtKXloah2mxrzzlc0Od2nRe",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "采购管理"
+    },
+    {
+      "name": "临时找货功能 产品文档",
+      "token": "AY7cdxDUGosozsxgZKKcKlSonEe",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "采购管理"
+    },
+    {
+      "name": "太力订单对接功能 产品文档",
+      "token": "CDnHdQFn5oxu1MxVsJscZOgMnbb",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "采购管理"
+    },
+    {
+      "name": "报货单  功能  产品文档",
+      "token": "UwNAdeMvQoAPFpx2R1AcrWIYnFc",
+      "type": "docx",
+      "category": "inventory-guide",
+      "folder": "采购管理"
+    },
+    {
+      "name": "商城管理后台",
+      "token": "QNO6dgK1mo14evxxLcgcP4Imn10",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "商城模块"
+    },
+    {
+      "name": "商城销售服务 产品文档",
+      "token": "Z95sdiUHZosPi0xbIRLcY0ICnxb",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "商城模块"
+    },
+    {
+      "name": "预售活动 产品文档",
+      "token": "JFm5dxpnEo4y0bxiUMRcSHx9nOc",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "商城模块"
+    },
+    {
+      "name": "商城首页设置",
+      "token": "DjqqdKQAXoIn2TxKWJRcBWTnnuc",
+      "type": "docx",
+      "category": "marketing-guide",
+      "folder": "商城模块"
+    },
+    {
+      "name": "审批流程中心(S1)     产品文档",
+      "token": "Lrcid0AqWoEIZOxmvLucAY2Onbf",
+      "type": "docx",
+      "category": "operations",
+      "folder": "审批模块"
+    },
+    {
+      "name": "待审批处理事项列表",
+      "token": "AsJzdCkoFobmJkxD1U1c8nWxntf",
+      "type": "docx",
+      "category": "operations",
+      "folder": "审批模块"
+    },
+    {
+      "name": "支付模块 产品文档",
+      "token": "LP0KdMpnYox0yVxGaTdc3FNFnGg",
+      "type": "docx",
+      "category": "operations",
+      "folder": "支付模块"
+    },
+    {
+      "name": "银行账户 产品文档",
+      "token": "UWlhd9sBXoEPLexF4gWc5Wjlnad",
+      "type": "docx",
+      "category": "operations",
+      "folder": "支付模块"
+    },
+    {
+      "name": "运营商模块",
+      "token": "ExvbdeVo5oeLanxqjs0cBiRmnrg",
+      "type": "docx",
+      "category": "operations",
+      "folder": "运营商模块"
+    },
+    {
+      "name": "运营商序列号管理 产品文档",
+      "token": "RBmOd7tJBoowtoxqcsAcuDqKn5c",
+      "type": "docx",
+      "category": "operations",
+      "folder": "运营商模块"
+    },
+    {
+      "name": "权限包 permission 产品文档",
+      "token": "SF6MdvEVboKpNoxvEJicXcRLnvg",
+      "type": "docx",
+      "category": "operations",
+      "folder": "鉴权模块"
+    },
+    {
+      "name": "职员登录信息记录功能 产品文档",
+      "token": "CaOBdecwHoGCiFxTQjicXEPXnH1",
+      "type": "docx",
+      "category": "operations",
+      "folder": "鉴权模块"
+    },
+    {
+      "name": "通过用户名密码登录",
+      "token": "AqJWdWjEIoXHsjxBkurcXznqnjg",
+      "type": "docx",
+      "category": "operations",
+      "folder": "鉴权模块"
+    },
+    {
+      "name": "通知中心",
+      "token": "Id9ndBHswouaAPx9EhrcKBdknFh",
+      "type": "docx",
+      "category": "operations",
+      "folder": "通知中心"
+    },
+    {
+      "name": "通知模块介绍",
+      "token": "W9dXd02KXo9qenxT79DcTGw4ndg",
+      "type": "docx",
+      "category": "operations",
+      "folder": "通知中心"
+    },
+    {
+      "name": "表单模块 产品文档",
+      "token": "Nuw8dBOzAonVP5xmf3bceXVlnMd",
+      "type": "docx",
+      "category": "operations",
+      "folder": "表单模块"
+    },
+    {
+      "name": "企业微信外部客户模块",
+      "token": "DWZedvIrUo3btGxS7DVcltyEn1d",
+      "type": "docx",
+      "category": "operations",
+      "folder": "企业微信外部客户模块"
+    },
+    {
+      "name": "任务管理",
+      "token": "RhGydIXh0oNhohxx92Fcfd73nhb",
+      "type": "docx",
+      "category": "operations",
+      "folder": "企业管理"
+    },
+    {
+      "name": "目标管理模块",
+      "token": "NxWrdSlZ8olcSMxOkZ0c4XnGnYf",
+      "type": "docx",
+      "category": "operations",
+      "folder": "企业管理"
+    },
+    {
+      "name": "工分管理",
+      "token": "ZvGgdHYJKoL84PxEaXkclrpdn7e",
+      "type": "docx",
+      "category": "operations",
+      "folder": "企业管理"
+    },
+    {
+      "name": "提成基础参数",
+      "token": "Tanidm9FBosYZZx317HcBbJpnuc",
+      "type": "docx",
+      "category": "operations",
+      "folder": "企业管理"
+    },
+    {
+      "name": "合同管理    产品文档",
+      "token": "ZzoEdaIatoPHcWxY1mUc6gwdnRf",
+      "type": "docx",
+      "category": "operations",
+      "folder": "企业管理"
+    },
+    {
+      "name": "维修文档 状态机",
+      "token": "JrH2dluM0o7dm0xoHgeczviYnDb",
+      "type": "docx",
+      "category": "operations",
+      "folder": "维修模块"
+    },
+    {
+      "name": "分类模块 产品文档",
+      "token": "VYiudOVaCosEHCxtJMKc0EfHnDg",
+      "type": "docx",
+      "category": "operations",
+      "folder": "分类模块"
+    },
+    {
+      "name": "邀请模块 产品文档",
+      "token": "CJnKd01TToyKIdxwTJGcM3pPnvc",
+      "type": "docx",
+      "category": "operations",
+      "folder": "邀请模块"
+    },
+    {
+      "name": "Z1使用说明书",
+      "token": "fldcnxolklwVCMGNYRtHBbPRnTl",
+      "type": "folder",
+      "category": "basics",
+      "folder": "Z1使用说明书"
+    }
+  ],
+  "lastUpdated": "2026-04-30",
+  "totalCount": 92
+}

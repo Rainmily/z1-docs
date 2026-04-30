@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '检查文章队列...' && head -20 /Users/fan/www/AI/z1-docs/.claude/z1-queue.json 2>/dev/null || echo '队列文件不存在'"
+          }
+        ]
+      }
+    ]
+  }
+}
