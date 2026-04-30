@@ -1,31 +1,70 @@
-import Exa from 'exa-js';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import https from 'https';
+import { JSDOM } from 'jsdom';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-const exa = new Exa(process.env.EXA_API_KEY);
+// RSS 订阅源
+const RSS_SOURCES = [
+  { name: 'IT之家', url: 'https://www.ithome.com/rss/' },
+  { name: '36氪', url: 'https://36kr.com/feed' },
+  { name: '虎嗅', url: 'https://www.huxiu.com/rss/0.xml' },
+];
 
-async function searchNews(query, numResults = 20) {
+// 关键词过滤
+const PHONE_KEYWORDS = ['手机', '华为', '小米', '苹果', 'OPPO', 'vivo', '荣耀', '一加', 'iPhone', 'Android', '芯片', '折叠屏', '5G', 'AI手机'];
+
+function fetchUrl(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+async function fetchRSS(source) {
   try {
-    const result = await exa.searchAndContents(
-      `${query}`,
-      {
-        type: 'auto',
-        numResults,
-        text: { maxCharacters: 3000 },
-        highlights: true,
-      }
-    );
-    return result.results || [];
+    console.log(`  - 获取 ${source.name}...`);
+    const xml = await fetchUrl(source.url);
+    const dom = new JSDOM(xml, { contentType: 'application/xml' });
+    const doc = dom.window.document;
+    const items = doc.querySelectorAll('item');
+
+    return Array.from(items).map(item => ({
+      title: item.querySelector('title')?.textContent?.trim() || '',
+      link: item.querySelector('link')?.textContent?.trim() || '',
+      description: item.querySelector('description')?.textContent?.trim() || item.querySelector('summary')?.textContent?.trim() || '',
+      pubDate: item.querySelector('pubDate')?.textContent?.trim() || '',
+      source: source.name,
+    })).filter(item => item.title && PHONE_KEYWORDS.some(kw => item.title.includes(kw) || item.description.includes(kw)));
   } catch (error) {
-    console.error('搜索失败:', error.message);
+    console.error(`  - ${source.name} 获取失败: ${error.message}`);
     return [];
   }
+}
+
+async function searchNews() {
+  console.log('开始获取 RSS 资讯...');
+  const allNews = [];
+
+  for (const source of RSS_SOURCES) {
+    const news = await fetchRSS(source);
+    allNews.push(...news);
+    await new Promise(r => setTimeout(r, 500)); // 避免请求过快
+  }
+
+  // 按日期排序
+  allNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+
+  console.log(`获取到 ${allNews.length} 条相关资讯`);
+  return allNews.slice(0, 20);
 }
 
 function generateMarkdown(news, dateStr) {
@@ -38,22 +77,33 @@ function generateMarkdown(news, dateStr) {
     '市场分析': [],
   };
 
-  const industryKeywords = ['涨价', '涨价潮', '成本', '供应链', '市场', '行业', '出货量', '下滑', '增长'];
-  const productKeywords = ['发布', '上市', '开售', '预售', '新品', '旗舰', '系列'];
-  const techKeywords = ['AI', '芯片', '技术', '创新', '折叠', '屏幕', '电池', '摄像', '处理器'];
-  const marketKeywords = ['市场份额', '销量', '收入', '利润', '均价', 'ASP', '高端', '低端'];
+  const industryKeywords = ['涨价', '成本', '供应链', '市场', '行业', '出货量', '下滑', '增长', '销量', '份额'];
+  const productKeywords = ['发布', '上市', '开售', '预售', '新品', '旗舰', '系列', '发布', '亮相'];
+  const techKeywords = ['AI', '芯片', '技术', '创新', '折叠', '屏幕', '电池', '摄像', '处理器', '系统'];
+  const marketKeywords = ['市场份额', '销量', '收入', '利润', '均价', '高端', '低端', '出货'];
+
+  const getSummary = (desc) => {
+    const text = desc.replace(/<[^>]+>/g, '').replace(/&[^;]+;/g, ' ').trim();
+    return text.slice(0, 150) + (text.length > 150 ? '...' : '');
+  };
+
+  const getDate = (pubDate) => {
+    try {
+      return new Date(pubDate).toISOString().split('T')[0];
+    } catch {
+      return dateStr;
+    }
+  };
 
   news.forEach((item) => {
-    const title = item.title || '';
-    const highlight = item.highlights?.[0] || item.text || '';
-    const source = item.source || item.url || '网络';
-    const pubDate = item.published?.split('T')[0] || dateStr;
-
-    const content = `${highlight.slice(0, 150)}${highlight.length > 150 ? '...' : ''}`;
+    const title = item.title;
+    const content = getSummary(item.description);
+    const pubDate = getDate(item.pubDate);
+    const source = item.source;
 
     let categorized = false;
     for (const kw of marketKeywords) {
-      if (title.includes(kw) || highlight.includes(kw)) {
+      if (title.includes(kw)) {
         sections['市场分析'].push({ title, content, source, pubDate });
         categorized = true;
         break;
@@ -61,7 +111,7 @@ function generateMarkdown(news, dateStr) {
     }
     if (!categorized) {
       for (const kw of techKeywords) {
-        if (title.includes(kw) || highlight.includes(kw)) {
+        if (title.includes(kw)) {
           sections['技术趋势'].push({ title, content, source, pubDate });
           categorized = true;
           break;
@@ -70,7 +120,7 @@ function generateMarkdown(news, dateStr) {
     }
     if (!categorized) {
       for (const kw of productKeywords) {
-        if (title.includes(kw) || highlight.includes(kw)) {
+        if (title.includes(kw)) {
           sections['新品发布'].push({ title, content, source, pubDate });
           categorized = true;
           break;
@@ -79,8 +129,9 @@ function generateMarkdown(news, dateStr) {
     }
     if (!categorized) {
       for (const kw of industryKeywords) {
-        if (title.includes(kw) || highlight.includes(kw)) {
+        if (title.includes(kw)) {
           sections['行业动态'].push({ title, content, source, pubDate });
+          categorized = true;
           break;
         }
       }
@@ -101,7 +152,7 @@ function generateMarkdown(news, dateStr) {
   for (const [sectionName, items] of Object.entries(sections)) {
     if (items.length > 0) {
       markdown += `## ${sectionName}\n\n`;
-      items.forEach((item, idx) => {
+      items.slice(0, 5).forEach((item, idx) => {
         markdown += `### ${idx + 1}. ${item.title}\n\n`;
         markdown += `${item.content}\n\n`;
         markdown += `**来源**：${item.source} | **日期**：${item.pubDate}\n\n`;
@@ -112,12 +163,12 @@ function generateMarkdown(news, dateStr) {
 
   markdown += `## 总结\n\n`;
   markdown += `**${todayFormatted}** 手机行业核心态势：\n\n`;
-  markdown += `1. **涨价潮持续**：存储芯片成本暴涨推动全行业涨价\n`;
-  markdown += `2. **新品密集发布**：华为、荣耀、小米、一加等品牌纷纷推出旗舰新品\n`;
-  markdown += `3. **高端化加速**：600美元以上市场份额持续扩张\n`;
-  markdown += `4. **AI与折叠屏成焦点**：AI深度赋能手机体验，折叠屏形态持续创新\n\n`;
+  markdown += `1. **市场动态**：手机行业持续演进，各品牌竞争激烈\n`;
+  markdown += `2. **新品密集**：各大厂商纷纷推出旗舰新品\n`;
+  markdown += `3. **技术创新**：AI、芯片、折叠屏等技术持续突破\n`;
+  markdown += `4. **行业趋势**：高端化与技术创新成为主旋律\n\n`;
   markdown += `---\n\n`;
-  markdown += `*本报告基于公开信息整理，由定时任务自动生成 | ${new Date().toLocaleString('zh-CN')}]*\n`;
+  markdown += `*本报告基于公开信息整理，由定时任务自动生成 | ${new Date().toLocaleString('zh-CN')}*\n`;
 
   return markdown;
 }
@@ -187,9 +238,7 @@ async function main() {
     fs.mkdirSync(newsDir, { recursive: true });
   }
 
-  console.log('搜索手机行业资讯...');
-  const news = await searchNews('手机行业资讯 新品发布 手机市场动态 手机行业新闻 2026', 20);
-  console.log(`获取到 ${news.length} 条资讯`);
+  const news = await searchNews();
 
   if (news.length === 0) {
     console.error('未获取到资讯，退出');

@@ -64,13 +64,13 @@ try {
         fs.mkdirSync(categoryDir, { recursive: true });
     }
 
-    // 生成文件名
-    const safeName = task.name
+    // 生成文件名 (处理中文)
+    const cleanName = task.name
+        .replace(/产品文档$/, '')
+        .replace(/^\s+|\s+$/g, '')
         .replace(/[，,、\s]+/g, '-')
-        .replace(/[【】[\]（）()]/g, '')
-        .replace(/[^\w-]/g, '')
-        .toLowerCase();
-    const outputFile = path.join(categoryDir, `${safeName}.mdx`);
+        .replace(/[【】[\]（）()]/g, '');
+    const outputFile = path.join(categoryDir, `${cleanName}.mdx`);
 
     log(`输出文件: ${outputFile}`);
 
