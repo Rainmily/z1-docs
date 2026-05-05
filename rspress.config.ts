@@ -8,6 +8,7 @@ export default defineConfig({
     logo: '/logo.svg',
     logoText: '掌上乾坤',
     nav: [
+      { text: '官网', link: 'https://www.whohi.cn/', target: '_blank' },
       { text: '产品功能', link: '/product/' },
       { text: 'Z1操作手册', link: '/z1/' },
       { text: '解决方案', link: '/solution/' },
@@ -15,7 +16,6 @@ export default defineConfig({
       { text: '资源中心', link: '/resources/' },
       { text: '行业资讯', link: '/industry-news/' },
       { text: '关于我们', link: '/about/' },
-            { text: '官网', link: 'https://www.whohi.cn/', target: '_blank' },
     ],
     sidebar: {
       '/product/': [
