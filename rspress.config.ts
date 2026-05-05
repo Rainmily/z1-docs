@@ -94,7 +94,7 @@ export default defineConfig({
       ],
     },
     footer: {
-      message: '© 2024 晋城市掌上乾坤网络科技有限公司 版权所有',
+      message: '© 2026 晋城市掌上乾坤网络科技有限公司 版权所有',
       copyright: '晋ICP备14005487号-2',
     },
   },
