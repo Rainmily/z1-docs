@@ -33,9 +33,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /www/wwwroot/z1-docs
-            git pull origin master
-            rm -rf node_modules
-            npm ci
-            npm run build
+            rm -rf /www/wwwroot/z1-docs/*
+            mv /www/wwwroot/z1-docs/.* /tmp/ 2>/dev/null || true
+            cp -r /home/runner/work/z1-docs/z1-docs/doc_build/* /www/wwwroot/z1-docs/
             echo "Deployment completed successfully"
