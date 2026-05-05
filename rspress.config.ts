@@ -8,7 +8,7 @@ export default defineConfig({
     logo: '/logo.svg',
     logoText: '掌上乾坤',
     nav: [
-      { text: '官网', link: 'https://www.whohi.cn/', target: '_blank' },
+      { text: '官网', link: 'https://www.zsqk.com.cn/', target: '_blank' },
       { text: '产品功能', link: '/product/' },
       { text: 'Z1操作手册', link: '/z1/' },
       { text: '解决方案', link: '/solution/' },
