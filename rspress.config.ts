@@ -7,7 +7,7 @@ export default defineConfig({
   themeConfig: {
     logo: {
       image: '/logo.jpg',
-      alt: '掌上乾坤',
+      text: '掌上乾坤',
     },
     logoText: '掌上乾坤',
     nav: [
