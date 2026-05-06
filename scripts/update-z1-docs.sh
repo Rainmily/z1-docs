@@ -74,15 +74,21 @@ try {
 
     log(`输出文件: ${outputFile}`);
 
-    // 读取飞书文档 (使用 --doc 标志)
+    // 读取飞书文档 (使用 --doc 标志, 返回json格式)
     let docContent = '';
     try {
-        const result = execSync(`lark-cli docs +fetch --doc ${task.token} --format markdown`, {
+        const result = execSync(`lark-cli docs +fetch --doc ${task.token} --format json`, {
             cwd: PROJECT_DIR,
             encoding: 'utf-8',
             timeout: 60000
         });
-        docContent = result;
+        // 解析JSON并提取markdown字段
+        const jsonResult = JSON.parse(result);
+        if (jsonResult.data && jsonResult.data.markdown) {
+            docContent = jsonResult.data.markdown;
+        } else {
+            throw new Error('JSON响应中没有markdown字段');
+        }
         log('成功读取飞书文档，长度: ' + docContent.length);
     } catch (err) {
         log(`读取飞书文档失败: ${err.message}`);
