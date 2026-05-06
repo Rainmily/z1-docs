@@ -90,6 +90,7 @@ export default defineConfig({
             { text: '会员业务', link: '/z1/member-guide/' },
             { text: '储值功能', link: '/z1/member-guide/stored-value' },
             { text: '会员功能', link: '/z1/member-guide/member-function' },
+            { text: '会员生日关怀', link: '/z1/member-guide/birthday-care' },
           ],
         },
       ],
