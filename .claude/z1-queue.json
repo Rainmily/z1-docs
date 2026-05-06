@@ -1,13 +1,6 @@
 {
   "queue": [
     {
-      "name": "会员   功能   产品文档",
-      "token": "PxH6dvAmZomkqxxI3tScR5Q4nm2",
-      "type": "docx",
-      "category": "member-guide",
-      "folder": "会员模块"
-    },
-    {
       "name": "会员生日关怀 产品文档",
       "token": "G2kJdFQbAolYT7xPsoicNvUUnQc",
       "type": "docx",
@@ -582,6 +575,6 @@
       "folder": "Z1使用说明书"
     }
   ],
-  "lastUpdated": "2026-04-30",
-  "totalCount": 92
+  "lastUpdated": "2026-05-06",
+  "totalCount": 91
 }
