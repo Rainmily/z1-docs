@@ -5,7 +5,10 @@ export default defineConfig({
   title: '掌上乾坤 - 手机连锁门店数智化解决方案',
   description: '10年深耕，服务5000+门店。专注手机连锁门店管理系统，从进销存到会员营销，从单店到连锁全覆盖。',
   themeConfig: {
-    logo: '/logo.jpg',
+    logo: {
+      image: '/logo.jpg',
+      alt: '掌上乾坤',
+    },
     logoText: '掌上乾坤',
     nav: [
       { text: '官网', link: 'https://www.zsqk.com.cn/', target: '_blank' },
