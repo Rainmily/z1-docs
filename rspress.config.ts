@@ -89,6 +89,7 @@ export default defineConfig({
             { text: 'Z1操作手册', link: '/z1/' },
             { text: '会员业务', link: '/z1/member-guide/' },
             { text: '储值功能', link: '/z1/member-guide/stored-value' },
+            { text: '会员功能', link: '/z1/member-guide/member-function' },
           ],
         },
       ],
