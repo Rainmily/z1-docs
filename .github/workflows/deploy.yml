@@ -30,7 +30,21 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to server via SSH
+      - name: Package build artifacts
+        run: tar -czf doc_build.tar.gz -C doc_build .
+
+      - name: Deploy to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "doc_build.tar.gz"
+          target: "/www/wwwroot/z1-docs/"
+          strip_components: 0
+
+      - name: Extract and restart Nginx
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -38,7 +52,5 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            rm -rf /www/wwwroot/z1-docs/*
-            mv /www/wwwroot/z1-docs/.* /tmp/ 2>/dev/null || true
-            cp -r /home/runner/work/z1-docs/z1-docs/doc_build/* /www/wwwroot/z1-docs/
+            cd /www/wwwroot/z1-docs && rm -rf doc_build && tar -xzf doc_build.tar.gz && rm doc_build.tar.gz
             echo "Deployment completed successfully"
