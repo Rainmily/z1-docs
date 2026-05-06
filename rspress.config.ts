@@ -91,6 +91,17 @@ export default defineConfig({
             { text: '储值功能', link: '/z1/member-guide/stored-value' },
             { text: '会员功能', link: '/z1/member-guide/member-function' },
             { text: '会员生日关怀', link: '/z1/member-guide/birthday-care' },
+            { text: '会员回访', link: '/z1/member-guide/member-return-visit' },
+            { text: '会员总览', link: '/z1/member-guide/member-overview' },
+            { text: '专属导购', link: '/z1/member-guide/personal-shopper' },
+          ],
+        },
+      ],
+      '/z1/marketing-guide/': [
+        {
+          text: '营销指南',
+          items: [
+            { text: '短信通知', link: '/z1/marketing-guide/sms-notification' },
           ],
         },
       ],
