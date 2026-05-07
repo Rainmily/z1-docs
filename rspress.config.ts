@@ -41,6 +41,11 @@ export default defineConfig({
     }),
   ],
   themeConfig: {
+    sidebar: {
+      '/industry-news/': {
+        useAutoSidebar: true,
+      },
+    },
     logo: {
       image: '/logo.jpg',
       text: '掌上乾坤',
@@ -104,8 +109,11 @@ export default defineConfig({
       '/industry-news/': [
         {
           text: '行业资讯',
+          collapsed: false,
           items: [
             { text: '行业资讯', link: '/industry-news/' },
+            { text: '📰 每日新闻', link: '/industry-news/daily' },
+            { text: '📁 历史存档', link: '/industry-news/20260505-2100' },
             { text: '2026发展趋势', link: '/industry-news/2026-trends' },
             { text: '客户转化率提升', link: '/industry-news/customer-conversion' },
             { text: '数字化转型', link: '/industry-news/digital-transformation' },

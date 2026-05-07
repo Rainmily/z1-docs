@@ -134,8 +134,8 @@ export function buildQrConnectUrl(companyId, redirectUri, state = '') {
   const params = new URLSearchParams({
     appid: config.corpId,
     agentid: config.agentId,
-    redirect_uri: encodeURIComponent(redirectUri),
-    state: encodeURIComponent(state),
+    redirect_uri: redirectUri,
+    state: state,
   });
   return `https://open.work.weixin.qq.com/wwopen/sso/qrConnect?${params.toString()}`;
 }
@@ -152,10 +152,10 @@ export function buildOAuthUrl(companyId, redirectUri, state = '', scope = 'snsap
   const config = resolveConfig(companyId);
   const params = new URLSearchParams({
     appid: config.corpId,
-    redirect_uri: encodeURIComponent(redirectUri),
+    redirect_uri: redirectUri,
     response_type: 'code',
     scope,
-    state: encodeURIComponent(state),
+    state: state,
   });
   return `https://open.work.weixin.qq.com/connect/oauth2/authorize?${params.toString()}#wechat_redirect`;
 }
