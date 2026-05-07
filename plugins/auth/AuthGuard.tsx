@@ -159,6 +159,9 @@ export default function AuthGuard({
   if (typeof window === 'undefined') {
     return <>{children}</>;
   }
+
+  // 确保 apiBase 是有效的字符串
+  const safeApiBase = apiBase || '/auth-api';
   const [session, setSession] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
