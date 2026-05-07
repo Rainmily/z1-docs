@@ -307,6 +307,11 @@ function LoginPanelPage({ company, apiBase, onBack }: {
           <br />
           仅限企业内部成员访问
         </p>
+
+        {/* 版本标记 */}
+        <p style={{ marginTop: '12px', fontSize: '10px', color: '#ddd' }}>
+          v2024.05.07-SDK
+        </p>
       </div>
 
       <p style={{ marginTop: '24px', fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
