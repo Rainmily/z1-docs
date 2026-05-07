@@ -82,6 +82,8 @@ jobs:
             # ── 3. 创建 .env（从 Secrets 注入）─────────────────
             cat > $DEPLOY_DIR/server_new/.env << 'ENVEOF'
 MULTI_WECOM_CONFIG=${{ secrets.MULTI_WECOM_CONFIG }}
+WECOM_AGENT_ID=${{ secrets.WECOM_AGENT_ID }}
+WECOM_AGENT_SECRET=${{ secrets.WECOM_AGENT_SECRET }}
 PORT=3001
 FRONTEND_URL=https://docs.whohi.cn
 SERVER_URL=https://docs.whohi.cn/auth-api
