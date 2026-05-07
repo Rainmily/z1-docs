@@ -37,7 +37,7 @@ export function getWecomConfig(companyId) {
 /** 获取所有可用企业（用于登录页展示） */
 export function getAllCompanies() {
   const all = loadMultiWecomConfig();
-  return all.map(({ id, name, logo }) => ({ id, name, logo }));
+  return all.map(({ id, name, logo, corpId, agentId }) => ({ id, name, logo, corpId, agentId }));
 }
 
 /** 检查是否启用了多企业模式 */

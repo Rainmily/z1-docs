@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 interface Company {
   id: string;
   name: string;
   logo?: string;
+  corpId?: string;
+  agentId?: string;
 }
 
 interface LoginPageProps {
@@ -140,39 +142,89 @@ function CompanySelector({ companies, onSelect }: {
   );
 }
 
-// ── 登录按钮页面（单企业 / 选择企业后）───────────────────────
-function LoginButtonPage({ company, apiBase, onBack, onError }: {
+// ── 登录面板页面 ─────────────────────────────────────────────
+function LoginPanelPage({ company, apiBase, onBack }: {
   company: Company;
   apiBase: string;
   onBack?: () => void;
-  onError?: (message: string) => void;
 }) {
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const wwLoginRef = useRef<any>(null);
 
-  const handleLogin = useCallback(async () => {
-    if (!company?.id) {
-      onError?.('企业信息加载失败，请刷新页面重试');
+  // 加载企业微信登录 SDK 并初始化登录面板
+  useEffect(() => {
+    if (!company.corpId || !company.agentId) {
       return;
     }
-    try {
-      // 统一使用 OAuth2.0 授权（网页登录）
-      // 企业微信应用「网页登录」功能支持所有端
-      const endpoint = '/auth/oauth-url';
-      const res = await fetch(`${apiBase}${endpoint}?companyId=${encodeURIComponent(company.id)}`, {
-        credentials: 'include',
-      });
-      const data = await res.json();
 
-      if (data.url) {
-        // 跳转到企业微信授权页面
-        window.location.href = data.url;
-      } else {
-        onError?.('获取登录链接失败，请稍后重试');
-      }
-    } catch {
-      onError?.('无法连接认证服务，请检查网络');
+    // 清理旧的登录面板
+    if (wwLoginRef.current) {
+      wwLoginRef.current.unmount?.();
+      wwLoginRef.current = null;
     }
-  }, [company.id, apiBase, onError]);
+
+    const script = document.createElement('script');
+    script.src = 'https://work.weixin.qq.com/wwopen/sso/ww_login_mini_programs.js';
+    script.async = true;
+
+    script.onload = () => {
+      const ww = (window as any).wx;
+      if (ww && containerRef.current) {
+        // 清理容器内容
+        containerRef.current.innerHTML = '';
+
+        try {
+          const loginObj = ww.createWWLoginPanel({
+            el: containerRef.current,
+            params: {
+              login_type: 'CorpApp',
+              appid: company.corpId,
+              agentid: company.agentId,
+              redirect_uri: `${apiBase}/auth/callback`,
+              state: JSON.stringify({ companyId: company.id }),
+              redirect_type: 'callback',
+            },
+            onLoginSuccess: async ({ code }: { code: string }) => {
+              console.log('[WWLogin] Login success, code:', code);
+              // 将 code 发送到后端完成登录
+              try {
+                const res = await fetch(`${apiBase}/auth/code-login`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ code, companyId: company.id }),
+                });
+                const data = await res.json();
+                if (data.token) {
+                  // 登录成功，跳转到成功页
+                  window.location.href = `/auth/success?token=${encodeURIComponent(data.token)}`;
+                } else {
+                  console.error('[WWLogin] No token returned:', data);
+                }
+              } catch (err) {
+                console.error('[WWLogin] Login failed:', err);
+              }
+            },
+            onLoginFail: (err: any) => {
+              console.error('[WWLogin] Login failed:', err);
+            },
+          });
+          wwLoginRef.current = loginObj;
+        } catch (err) {
+          console.error('[WWLogin] Failed to create login panel:', err);
+        }
+      }
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      if (wwLoginRef.current) {
+        wwLoginRef.current.unmount?.();
+        wwLoginRef.current = null;
+      }
+    };
+  }, [company, apiBase]);
 
   return (
     <div
@@ -222,45 +274,22 @@ function LoginButtonPage({ company, apiBase, onBack, onError }: {
         <h2 style={{ margin: '0 0 6px', fontSize: '22px', color: '#1a1a1a', fontWeight: 600 }}>
           {company.name}
         </h2>
-        <p style={{ margin: '0 0 32px', fontSize: '14px', color: '#888' }}>
-          请使用企业微信账号登录访问
+        <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#888' }}>
+          请使用企业微信扫码登录
         </p>
 
-        {/* 登录按钮 */}
-        <button
-          onClick={handleLogin}
-          style={{
-            width: '100%',
-            padding: '14px',
-            background: 'linear-gradient(135deg, #1aad19, #07c160)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: '16px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            boxShadow: '0 4px 12px rgba(26, 173, 25, 0.3)',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348z"/>
-          </svg>
-          企业微信授权登录
-        </button>
+        {/* 企业微信登录面板容器 */}
+        <div
+          ref={containerRef}
+          style={{ display: 'flex', justifyContent: 'center', minHeight: '300px' }}
+        />
 
         {/* 返回按钮（多企业模式） */}
         {onBack && (
           <button
             onClick={onBack}
             style={{
-              marginTop: '12px',
+              marginTop: '20px',
               background: 'none',
               border: 'none',
               color: '#888',
@@ -273,8 +302,8 @@ function LoginButtonPage({ company, apiBase, onBack, onError }: {
           </button>
         )}
 
-        <p style={{ marginTop: '20px', fontSize: '12px', color: '#ccc', lineHeight: 1.6 }}>
-          点击后将跳转至企业微信进行身份验证
+        <p style={{ marginTop: '16px', fontSize: '12px', color: '#ccc', lineHeight: 1.6 }}>
+          请使用企业微信扫码登录
           <br />
           仅限企业内部成员访问
         </p>
@@ -337,7 +366,7 @@ export default function WeComLogin({ apiBase, onError }: LoginPageProps) {
     return <CompanySelector companies={companies} onSelect={setSelectedCompany} />;
   }
 
-  // 已选企业 → 显示登录按钮页
+  // 已选企业 → 显示登录面板页
   const company = selectedCompany || companies[0];
 
   // 防御性检查：没有可用企业
@@ -350,11 +379,10 @@ export default function WeComLogin({ apiBase, onError }: LoginPageProps) {
   }
 
   return (
-    <LoginButtonPage
+    <LoginPanelPage
       company={company}
       apiBase={apiBase}
       onBack={multiTenant ? () => setSelectedCompany(null) : undefined}
-      onError={onError}
     />
   );
 }

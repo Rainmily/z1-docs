@@ -246,4 +246,50 @@ router.post('/verify', (req, res) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════════
+// 端点 8：企业微信 SDK 登录（code 换 token）
+// 前端 SDK 登录成功后调用此接口
+// ════════════════════════════════════════════════════════════════
+router.post('/code-login', async (req, res) => {
+  const { code, companyId } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: '缺少 code 参数' });
+  }
+
+  // 如果没有指定 companyId，尝试从 state 中解析（SDK 登录时传递的 state）
+  // 但 SDK 的 state 格式与 OAuth 不同，这里简化处理：如果没传 companyId，尝试使用第一个企业
+  let resolvedCompanyId = companyId;
+  if (!resolvedCompanyId) {
+    const companies = getAllCompanies();
+    if (companies.length > 0) {
+      resolvedCompanyId = companies[0].id;
+    }
+  }
+
+  try {
+    // 使用 OAuth 流程完成登录（与 completeOAuthLogin 相同）
+    const userInfo = await completeOAuthLogin(resolvedCompanyId, code);
+
+    // 写入 Session
+    req.session[SESSION_KEY] = {
+      ...userInfo,
+      loginTime: Date.now(),
+      loginType: 'sdk',
+    };
+
+    // 生成前端 token
+    const sessionToken = Buffer.from(JSON.stringify({
+      ...userInfo,
+      loginTime: Date.now(),
+      expires: Date.now() + 8 * 60 * 60 * 1000,
+    })).toString('base64');
+
+    res.json({ token: sessionToken, user: userInfo });
+  } catch (err) {
+    console.error('[CodeLogin Error]', err.message);
+    res.status(401).json({ error: err.message });
+  }
+});
+
 export default router;
