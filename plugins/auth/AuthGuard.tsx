@@ -136,6 +136,11 @@ function AuthErrorDisplay({ message }: { message: string }) {
 
 // ── 主守卫组件 ──────────────────────────────────────────────────
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
+  // SSR 检查：服务端渲染时返回空
+  if (typeof window === 'undefined') {
+    return <>{children}</>;
+  }
+
   const config: AuthConfig = window.__ZSQK_AUTH_CONFIG__ ?? {
     enabled: false,
     apiBase: '/auth-api',
