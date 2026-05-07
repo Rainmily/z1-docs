@@ -38,7 +38,7 @@ jobs:
           COPYFILE_DISABLE: '1'
         run: |
           tar -czf doc_build.tar.gz doc_build
-          tar -czf server.tar.gz -C server . --exclude='node_modules' --exclude='.env'
+          tar -czf server.tar.gz --exclude='node_modules' --exclude='.env' -C server .
 
       # ── 4. 部署到服务器 ─────────────────────────────────────
       - name: Deploy to server via SCP
