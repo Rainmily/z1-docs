@@ -29,7 +29,7 @@ export default defineConfig({
         '/solution/',   // 解决方案
         '/cases/',      // 成功案例
         '/industry-news/', // 行业资讯
-        '/about/',      // 关于我们
+        '/about/',      // 更新日志
         '/resources/',  // 资源中心
       ],
 
@@ -54,7 +54,7 @@ export default defineConfig({
       { text: '成功案例', link: '/cases/' },
       { text: '资源中心', link: '/resources/' },
       { text: '行业资讯', link: '/industry-news/' },
-      { text: '关于我们', link: '/about/' },
+      { text: '更新日志', link: '/about/' },
     ],
     sidebar: {
       '/product/': [

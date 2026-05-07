@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import LoginButton from './LoginButton';
 
 interface AuthConfig {
   enabled: boolean;
@@ -166,14 +167,6 @@ export default function AuthGuard({
   const [isLoading, setIsLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isAuthPage, setIsAuthPage] = useState(false); // 当前是否在认证回调页
-  const WeComLoginRef = useRef<React.ComponentRef<typeof WeComLogin> | null>(null);
-
-  // ── 动态导入 WeComLogin（避免 ESM 循环引用）───────────────────
-  const [WeComLogin, setWeComLogin] = useState<React.ComponentType<{ apiBase: string; onError?: (msg: string) => void }> | null>(null);
-
-  useEffect(() => {
-    import('./WeComLogin').then((m) => setWeComLogin(() => m.default));
-  }, []);
 
   // ── 初始化：检查 URL 参数 + localStorage ─────────────────────
   useEffect(() => {
@@ -369,28 +362,16 @@ export default function AuthGuard({
     );
   }
 
-  // ── 未登录 → 显示企业微信登录页 ─────────────────────────────
-  if (!WeComLogin) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          fontFamily: 'system-ui, sans-serif',
-          color: '#666',
-        }}
-      >
-        <span>正在加载登录组件...</span>
-      </div>
-    );
-  }
-
+  // ── 未登录但不需要登录 → 显示主动登录入口 ─────────────────────
+  // 当用户访问公开页面但想主动登录时，显示登录按钮
   return (
     <>
-      <AuthSuccessHandler onSuccess={handleLoginSuccess} />
-      <WeComLogin apiBase={apiBase} onError={setLoginError} />
+      {children}
+      <LoginButton
+        apiBase={safeApiBase}
+        onLoginSuccess={(token) => handleLoginSuccess(token)}
+        onLoginError={setLoginError}
+      />
     </>
   );
 }
