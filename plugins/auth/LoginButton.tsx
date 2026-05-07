@@ -91,22 +91,35 @@ export default function LoginButton({ apiBase, onLoginSuccess, onLoginError }: L
           top: '12px',
           right: '12px',
           zIndex: 9998,
-          background: '#1aad19',
-          color: '#fff',
-          padding: '8px 16px',
-          borderRadius: '20px',
+          background: 'rgba(255, 255, 255, 0.9)',
+          color: '#333',
+          padding: '6px 14px',
+          borderRadius: '6px',
           fontSize: '13px',
-          fontFamily: 'system-ui, sans-serif',
-          border: 'none',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          border: '1px solid #e0e0e0',
           cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(26, 173, 25, 0.3)',
+          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.08)',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#fff';
+          e.currentTarget.style.borderColor = '#1aad19';
+          e.currentTarget.style.color = '#1aad19';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.9)';
+          e.currentTarget.style.borderColor = '#e0e0e0';
+          e.currentTarget.style.color = '#333';
         }}
       >
-        <span style={{ fontSize: '16px' }}>💬</span>
-        <span>企业微信登录</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+        <span>登录</span>
       </button>
     );
   }
