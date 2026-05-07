@@ -93,16 +93,34 @@ jobs:
             echo "✅ 后端服务已解压"
 
             # ── 3. 创建 .env（从 Secrets 注入）─────────────────
-            {
-              echo "MULTI_WECOM_CONFIG=${{ secrets.MULTI_WECOM_CONFIG }}"
-              echo "WECOM_AGENT_ID=${{ secrets.WECOM_AGENT_ID }}"
-              echo "WECOM_AGENT_SECRET=${{ secrets.WECOM_AGENT_SECRET }}"
-              echo "PORT=3001"
-              echo "FRONTEND_URL=https://docs.whohi.cn"
-              echo "SERVER_URL=https://docs.whohi.cn/auth-api"
-              echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}"
-              echo "NODE_ENV=production"
-            } > $DEPLOY_DIR/server_new/.env
+            # 使用 Python 处理包含特殊字符的 JSON，避免 shell 转义问题
+            python3 << 'PYEOF'
+import os
+import json
+
+secrets = {
+    'MULTI_WECOM_CONFIG': '''${{ secrets.MULTI_WECOM_CONFIG }}''',
+    'WECOM_AGENT_ID': '''${{ secrets.WECOM_AGENT_ID }}''',
+    'WECOM_AGENT_SECRET': '''${{ secrets.WECOM_AGENT_SECRET }}''',
+    'SESSION_SECRET': '''${{ secrets.SESSION_SECRET }}''',
+}
+
+env_content = f'''
+MULTI_WECOM_CONFIG={secrets['MULTI_WECOM_CONFIG']}
+WECOM_AGENT_ID={secrets['WECOM_AGENT_ID']}
+WECOM_AGENT_SECRET={secrets['WECOM_AGENT_SECRET']}
+PORT=3001
+FRONTEND_URL=https://docs.whohi.cn
+SERVER_URL=https://docs.whohi.cn/auth-api
+SESSION_SECRET={secrets['SESSION_SECRET']}
+NODE_ENV=production
+'''
+
+with open('/www/wwwroot/z1-docs/server_new/.env', 'w') as f:
+    f.write(env_content)
+
+print("✅ .env 配置文件已创建")
+PYEOF
             # .env 配置文件已创建
             echo "✅ .env 配置文件已创建 ✓"
 
