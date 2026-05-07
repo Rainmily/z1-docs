@@ -5,16 +5,16 @@
  * 1. 启动时检查 localStorage session
  * 2. 无 session 时显示企业微信登录页
  * 3. 处理登录成功/失败的 URL 回调
- * 4. 右上角显示用户徽章 + 退出登录
+ * 4. 右上角显示用户徽章 + 登录/退出按钮
  * 5. 定期向后端验证 session 有效性
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import WeComLogin from './WeComLogin';
 
 interface AuthConfig {
   enabled: boolean;
-  apiBase: string;          // 后端 API 地址，如 http://localhost:3001
+  apiBase: string;
   protectedPaths: string[];
   publicPaths: string[];
   showUserBadge: boolean;
@@ -53,18 +53,6 @@ function loadSession(): SessionUser | null {
 // ── 路径匹配 ────────────────────────────────────────────────────
 function matchPath(pathname: string, patterns: string[]): boolean {
   return patterns.some((p) => pathname === p || pathname.startsWith(p));
-}
-
-// ── 登录成功页面（处理后端回调）────────────────────────────────
-function AuthSuccessHandler({ onSuccess }: { onSuccess: (token: string) => void }) {
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (token) {
-      onSuccess(token);
-    }
-  }, [onSuccess]);
-  return null;
 }
 
 // ── 登录错误页面 ───────────────────────────────────────────────
@@ -135,6 +123,58 @@ function AuthErrorDisplay({ message }: { message: string }) {
   );
 }
 
+// ── 用户徽章组件 ───────────────────────────────────────────────
+function UserBadge({ session, onLogout, onLogin }: {
+  session: SessionUser | null;
+  onLogout: () => void;
+  onLogin: () => void;
+}) {
+  const badgeStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: '12px',
+    right: '12px',
+    zIndex: 9999,
+    background: 'rgba(26, 173, 25, 0.92)',
+    color: '#fff',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontSize: '13px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    backdropFilter: 'blur(8px)',
+    boxShadow: '0 2px 12px rgba(26, 173, 25, 0.3)',
+    fontFamily: 'system-ui, sans-serif',
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.2)',
+    border: 'none',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '12px',
+    padding: '2px 8px',
+    borderRadius: '10px',
+  };
+
+  return (
+    <div style={badgeStyle}>
+      {session ? (
+        <>
+          <span>👤 {session.name || session.userid}</span>
+          <button onClick={onLogout} title="退出登录" style={buttonStyle}>
+            退出
+          </button>
+        </>
+      ) : (
+        <button onClick={onLogin} title="登录" style={buttonStyle}>
+          登录
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── 主守卫组件 Props ────────────────────────────────────────────
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -156,34 +196,38 @@ export default function AuthGuard({
   showUserBadge = false,
   trustedDomain = '/auth-api',
 }: AuthGuardProps) {
-  // SSR 检查：服务端渲染时返回空
-  if (typeof window === 'undefined') {
-    return <>{children}</>;
-  }
-
-  // 确保 apiBase 是有效的字符串
   const safeApiBase = apiBase || '/auth-api';
+  const isServer = typeof window === 'undefined';
   const [session, setSession] = useState<SessionUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(isServer ? false : true);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [isAuthPage, setIsAuthPage] = useState(false); // 当前是否在认证回调页
-  const [accessBlocked, setAccessBlocked] = useState(false); // 受保护页面访问被拦截
+  const [isAuthPage, setIsAuthPage] = useState(false);
+  const [isLoginPage, setIsLoginPage] = useState(false);
 
   // ── 初始化：检查 URL 参数 + localStorage ─────────────────────
   useEffect(() => {
+    // SSR 时跳过客户端逻辑
+    if (isServer) {
+      return;
+    }
+
+    // 检查是否为登录页面
+    if (window.location.pathname === '/auth/login') {
+      setIsLoginPage(true);
+      setIsLoading(false);
+      return;
+    }
+
     if (!enabled) {
       setIsLoading(false);
       return;
     }
 
     const params = new URLSearchParams(window.location.search);
-    // 支持两种参数名：auth_token（新版）/ token（兼容旧版）
     const token = params.get('auth_token') || params.get('token');
-    // 支持两种参数名：auth_error（新版）/ message（兼容旧版）
     const errorMsg = params.get('auth_error') || params.get('message');
 
     if (errorMsg) {
-      // 来自后端的错误回调
       setIsAuthPage(true);
       setLoginError(errorMsg);
       setIsLoading(false);
@@ -191,20 +235,17 @@ export default function AuthGuard({
     }
 
     if (token) {
-      // 登录成功：从 token 恢复 session
       try {
         const decoded: SessionUser = JSON.parse(atob(token));
         if (Date.now() <= decoded.expires) {
           localStorage.setItem('zsqk_wecom_session', JSON.stringify(decoded));
           setSession(decoded);
-          // 清除 URL 参数
           window.history.replaceState({}, '', window.location.pathname);
         }
       } catch {
         // token 解析失败
       }
     } else {
-      // 普通访问：从 localStorage 恢复
       setSession(loadSession());
     }
 
@@ -213,47 +254,33 @@ export default function AuthGuard({
 
   // ── 路由变化时检查权限 ────────────────────────────────────────
   useEffect(() => {
-    if (!enabled || isLoading) return;
+    if (!enabled || isLoading || isServer) return;
 
     const pathname = window.location.pathname;
 
-    // 公开路径：跳过
-    if (matchPath(pathname, publicPaths)) {
-      setAccessBlocked(false);
+    // 跳过登录页面本身的检查
+    if (pathname === '/auth/login') {
       return;
     }
 
-    // 配置了 protectedPaths：只保护这些路径
-    if (protectedPaths.length > 0) {
-      const isProtected = matchPath(pathname, protectedPaths);
-      if (!isProtected) {
-        setAccessBlocked(false);
-        return;
-      }
-
-      // 受保护但无 session → 拦截访问，只显示登录面板
-      const currentSession = loadSession();
-      if (!currentSession) {
-        setSession(null);
-        setAccessBlocked(true);
-      } else {
-        setAccessBlocked(false);
-      }
-    } else {
-      // 没有配置 protectedPaths：站点整体需要登录
-      const currentSession = loadSession();
-      if (!currentSession) {
-        setSession(null);
-        setAccessBlocked(true);
-      } else {
-        setAccessBlocked(false);
-      }
+    // 公开路径：跳过权限检查
+    if (matchPath(pathname, publicPaths)) {
+      return;
     }
-  }, [window.location.pathname, isLoading, enabled, protectedPaths, publicPaths]);
+
+    // 检查是否为受保护路径且无 session
+    const isProtected = protectedPaths.length === 0 || matchPath(pathname, protectedPaths);
+
+    if (isProtected && !loadSession()) {
+      // 跳转到登录页面
+      sessionStorage.setItem('auth_return_url', pathname);
+      window.location.href = '/auth/login';
+    }
+  }, [isServer, isLoading, enabled, protectedPaths, publicPaths]);
 
   // ── 定期验证 session（每 30 分钟）───────────────────────────
   useEffect(() => {
-    if (!enabled || !session) return;
+    if (!enabled || !session || isServer) return;
 
     const verifyInterval = setInterval(async () => {
       try {
@@ -264,12 +291,11 @@ export default function AuthGuard({
           body: JSON.stringify({ token: btoa(JSON.stringify(session)) }),
         });
         if (!res.ok) {
-          // token 无效，清理 session
           localStorage.removeItem('zsqk_wecom_session');
           setSession(null);
         }
       } catch {
-        // 网络错误时保持 session（避免误杀）
+        // 网络错误时保持 session
       }
     }, 30 * 60 * 1000);
 
@@ -283,7 +309,7 @@ export default function AuthGuard({
       localStorage.setItem('zsqk_wecom_session', JSON.stringify(decoded));
       setSession(decoded);
       setIsAuthPage(false);
-      // 清除 URL 参数
+      setShowLoginPanel(false);
       window.history.replaceState({}, '', window.location.pathname);
     } catch {
       setLoginError('登录状态解析失败');
@@ -328,67 +354,25 @@ export default function AuthGuard({
     return <AuthErrorDisplay message={loginError} />;
   }
 
-  // ── 已登录 / 权限关闭 → 渲染内容 + 用户徽章 ──────────────────
-  if (!enabled || session) {
-    return (
-      <>
-        {children}
-        {showUserBadge && session && (
-          <div
-            style={{
-              position: 'fixed',
-              top: '12px',
-              right: '12px',
-              zIndex: 9999,
-              background: 'rgba(26, 173, 25, 0.92)',
-              color: '#fff',
-              padding: '6px 14px',
-              borderRadius: '20px',
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 2px 12px rgba(26, 173, 25, 0.3)',
-              fontFamily: 'system-ui, sans-serif',
-            }}
-          >
-            <span>👤 {session.name || session.userid}</span>
-            <button
-              onClick={handleLogout}
-              title="退出登录"
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: '12px',
-                padding: '2px 8px',
-                borderRadius: '10px',
-              }}
-            >
-              退出
-            </button>
-          </div>
-        )}
-      </>
-    );
+  // ── 登录页面 ─────────────────────────────────────────────────
+  if (isLoginPage) {
+    return <WeComLogin apiBase={safeApiBase} />;
   }
 
-  // ── 未登录但不需要登录 → 显示主动登录入口 ─────────────────────
-  // 当用户访问公开页面但想主动登录时，显示登录按钮
-  // 但如果 accessBlocked 为 true（受保护页面），只显示登录面板
-  if (accessBlocked) {
-    return <WeComLogin apiBase={safeApiBase} onError={setLoginError} />;
-  }
-
+  // ── 渲染内容 + 用户徽章 ───────────────────────────────────────
   return (
     <>
       {children}
-      <WeComLogin
-        apiBase={safeApiBase}
-        onError={setLoginError}
-      />
+      {showUserBadge && (
+        <UserBadge
+          session={session}
+          onLogout={handleLogout}
+          onLogin={() => {
+            sessionStorage.setItem('auth_return_url', window.location.pathname);
+            window.location.href = '/auth/login';
+          }}
+        />
+      )}
     </>
   );
 }

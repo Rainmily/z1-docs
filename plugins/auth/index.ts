@@ -49,7 +49,7 @@ export function pluginAuth(options: WeComAuthPluginOptions = {}): RspressPlugin 
   return {
     name: 'plugin-auth',
 
-    // 注入全局守卫组件（每个页面加载时执行）
+    // 注入全局守卫组件
     globalUIComponents: [[authGuardPath, {
       name: 'AuthGuard',
       enabled,

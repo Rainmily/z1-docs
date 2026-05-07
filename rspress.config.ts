@@ -6,6 +6,9 @@ export default defineConfig({
   title: '掌上乾坤-赋能中心',
   description: '10年深耕，服务5000+门店。专注手机连锁门店管理系统，从进销存到会员营销，从单店到连锁全覆盖。',
 
+  // 禁用 SSR，避免 hydration 不匹配问题
+  ssg: false,
+
   // ── 页面权限控制（企业微信登录）────────────────────────────────
   plugins: [
     pluginAuth({
@@ -31,6 +34,7 @@ export default defineConfig({
         '/industry-news/', // 行业资讯
         '/about/',      // 更新日志
         '/resources/',  // 资源中心
+        '/auth/login',  // 登录页面
       ],
 
       // 右上角显示已登录用户徽章
