@@ -95,26 +95,8 @@ jobs:
             # ── 3. 创建 .env（从 Secrets 注入）─────────────────
             # 将 secrets 写入临时 JSON，Python 读取并生成 .env
             echo '${{ toJSON(secrets) }}' > /tmp/secrets.json
-            python3 << 'PYEOF'
-import json
-
-with open('/tmp/secrets.json', 'r') as f:
-    secrets = json.load(f)
-
-env_content = f"""MULTI_WECOM_CONFIG={secrets['MULTI_WECOM_CONFIG']}
-WECOM_AGENT_ID={secrets['WECOM_AGENT_ID']}
-WECOM_AGENT_SECRET={secrets['WECOM_AGENT_SECRET']}
-PORT=3001
-FRONTEND_URL=https://docs.whohi.cn
-SERVER_URL=https://docs.whohi.cn/auth-api
-SESSION_SECRET={secrets['SESSION_SECRET']}
-NODE_ENV=production
-"""
-
-with open('/www/wwwroot/z1-docs/server_new/.env', 'w') as f:
-    f.write(env_content)
-print('.env created')
-PYEOF
+            echo "aW1wb3J0IGpzb24KCndpdGggb3BlbignL3RtcC9zZWNyZXRzLmpzb24nLCAncicpIGFzIGY6CiAgICBzZWNyZXRzID0ganNvbi5sb2FkKGYpCgplbnZfY29udGVudCA9IGYiIiJNVUxUSV9XRUNPTV9DT05GSUc9e3NlY3JldHNbJ01VTFRJX1dFQ09NX0NPTkZJRyddfQpXRUNPTV9BR0VOVF9JRD17c2VjcmV0c1snV0VDT01fQUdFTlRfSUQnXX0KV0VDT01fQUdFTlRfU0VDUkVUPXtzZWNyZXRzWydXRUNPTV9BR0VOVF9TRUNSRVQnXX0KUE9SVD0zMDAxCkZST05URU5EX1VSTD1odHRwczovL2RvY3Mud2hvaGkuY24KU0VSVkVSX1VSTD1odHRwczovL2RvY3Mud2hvaGkuY24vYXV0aC1hcGkKU0VTU0lPTl9TRUNSRVQ9e3NlY3JldHNbJ1NFU1NJT05fU0VDUkVUJ119Ck5PREVfRU5WPXByb2R1Y3Rpb24KIiIiCgp3aXRoIG9wZW4oJy93d3cvd3d3cm9vdC96MS1kb2NzL3NlcnZlcl9uZXcvLmVudicsICd3JykgYXMgZjoKICAgIGYud3JpdGUoZW52X2NvbnRlbnQpCnByaW50KCcuZW52IGNyZWF0ZWQnKQo=" | base64 -d > /tmp/create_env.py
+            python3 /tmp/create_env.py
             # .env 配置文件已创建
             echo "✅ .env 配置文件已创建 ✓"
 
