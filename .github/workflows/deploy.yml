@@ -82,16 +82,16 @@ jobs:
             echo "✅ 后端服务已解压"
 
             # ── 3. 创建 .env（从 Secrets 注入）─────────────────
-            cat > $DEPLOY_DIR/server_new/.env << 'ENVEOF'
-MULTI_WECOM_CONFIG=${{ secrets.MULTI_WECOM_CONFIG }}
-WECOM_AGENT_ID=${{ secrets.WECOM_AGENT_ID }}
-WECOM_AGENT_SECRET=${{ secrets.WECOM_AGENT_SECRET }}
-PORT=3001
-FRONTEND_URL=https://docs.whohi.cn
-SERVER_URL=https://docs.whohi.cn/auth-api
-SESSION_SECRET=${{ secrets.SESSION_SECRET }}
-NODE_ENV=production
-ENVEOF
+            printf '%s\n' \
+              "MULTI_WECOM_CONFIG=${{ secrets.MULTI_WECOM_CONFIG }}" \
+              "WECOM_AGENT_ID=${{ secrets.WECOM_AGENT_ID }}" \
+              "WECOM_AGENT_SECRET=${{ secrets.WECOM_AGENT_SECRET }}" \
+              "PORT=3001" \
+              "FRONTEND_URL=https://docs.whohi.cn" \
+              "SERVER_URL=https://docs.whohi.cn/auth-api" \
+              "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" \
+              "NODE_ENV=production" \
+              > $DEPLOY_DIR/server_new/.env
             # .env 配置文件已创建
             echo "✅ .env 配置文件已创建"
 
