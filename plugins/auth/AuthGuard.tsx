@@ -176,8 +176,10 @@ export default function AuthGuard({
     }
 
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const errorMsg = params.get('message');
+    // 支持两种参数名：auth_token（新版）/ token（兼容旧版）
+    const token = params.get('auth_token') || params.get('token');
+    // 支持两种参数名：auth_error（新版）/ message（兼容旧版）
+    const errorMsg = params.get('auth_error') || params.get('message');
 
     if (errorMsg) {
       // 来自后端的错误回调

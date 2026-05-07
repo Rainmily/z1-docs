@@ -172,16 +172,17 @@ router.get('/callback', async (req, res) => {
       expires: Date.now() + 8 * 60 * 60 * 1000,
     })).toString('base64');
 
-    // 5. 重定向到前端成功页
-    const redirectUrl = new URL(`${FRONTEND_URL}/auth/success`);
-    redirectUrl.searchParams.set('token', sessionToken);
+    // 5. 重定向到前端首页（AuthGuard 会处理 URL 中的 token 参数）
+    const redirectUrl = new URL(`${FRONTEND_URL}/`);
+    redirectUrl.searchParams.set('auth_token', sessionToken);
     res.redirect(redirectUrl.toString());
 
   } catch (err) {
     console.error('[Callback Error]', err.message);
 
-    const errorUrl = new URL(`${FRONTEND_URL}/auth/error`);
-    errorUrl.searchParams.set('message', encodeURIComponent(err.message));
+    // 重定向到首页并带上错误信息
+    const errorUrl = new URL(`${FRONTEND_URL}/`);
+    errorUrl.searchParams.set('auth_error', err.message);
     res.redirect(errorUrl.toString());
   }
 });
