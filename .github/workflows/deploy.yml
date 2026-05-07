@@ -1,4 +1,4 @@
-name: 🚀 Deploy to Server
+name: 🚀 Deploy Docs + Auth Server
 
 on:
   push:
@@ -12,12 +12,14 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
+      # ── 1. 拉取代码 ──────────────────────────────────────────
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ── 2. 构建前端静态站点 ──────────────────────────────────
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -27,12 +29,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build Rspress site
         run: npm run build
 
+      # ── 3. 打包构建产物 ──────────────────────────────────────
       - name: Package build artifacts
-        run: tar -czf doc_build.tar.gz -C doc_build .
+        run: |
+          tar -czf doc_build.tar.gz -C doc_build .
+          tar -czf server.tar.gz server/ --exclude='server/node_modules' --exclude='server/.env'
 
+      # ── 4. 部署到服务器 ─────────────────────────────────────
       - name: Deploy to server via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -40,17 +46,111 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "doc_build.tar.gz"
+          source: "doc_build.tar.gz,server.tar.gz"
           target: "/www/wwwroot/z1-docs/"
           strip_components: 0
 
-      - name: Extract and restart Nginx
+      # ── 5. 服务器端：解压 + 重启服务 ─────────────────────────
+      - name: Deploy & restart services on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          timeout: 120s
           script: |
-            cd /www/wwwroot/z1-docs && rm -rf doc_build && tar -xzf doc_build.tar.gz && rm doc_build.tar.gz
-            echo "Deployment completed successfully"
+            set -e
+            DEPLOY_DIR="/www/wwwroot/z1-docs"
+            NGINX_CONF="/www/server/panel/vhost/nginx/docs.whohi.cn.ssl.conf"
+
+            # ── 1. 解压前端构建产物 ───────────────────────────
+            cd $DEPLOY_DIR
+            rm -rf doc_build
+            tar -xzf doc_build.tar.gz
+            rm doc_build.tar.gz
+            chown -R lighthouse:lighthouse doc_build
+            echo "✅ 前端静态站点已解压"
+
+            # ── 2. 解压后端服务 ────────────────────────────────
+            rm -rf server_new
+            tar -xzf server.tar.gz
+            mv server server_new
+            rm server.tar.gz
+            echo "✅ 后端服务已解压"
+
+            # ── 3. 创建 .env（从 Secrets 注入）─────────────────
+            cat > $DEPLOY_DIR/server_new/.env << 'ENVEOF'
+MULTI_WECOM_CONFIG=${{ secrets.MULTI_WECOM_CONFIG }}
+PORT=3001
+FRONTEND_URL=https://docs.whohi.cn
+SERVER_URL=https://docs.whohi.cn/auth-api
+SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+NODE_ENV=production
+ENVEOF
+            echo "✅ .env 配置文件已创建"
+
+            # ── 4. 安装后端依赖 ────────────────────────────────
+            cd $DEPLOY_DIR/server_new
+            npm install --production
+            echo "✅ 后端依赖已安装"
+
+            # ── 5. 停止旧服务 ─────────────────────────────────
+            pm2 stop z1-docs-auth 2>/dev/null || true
+            pm2 delete z1-docs-auth 2>/dev/null || true
+            echo "✅ 旧服务已停止"
+
+            # ── 6. 启动新服务 ─────────────────────────────────
+            pm2 start src/index.js \
+              --name z1-docs-auth \
+              --interpreter node \
+              --cwd $DEPLOY_DIR/server_new
+            pm2 save
+            echo "✅ 后端服务已启动"
+
+            # ── 7. 等待服务就绪 ──────────────────────────────
+            sleep 3
+
+            # ── 8. 更新 Nginx 配置（添加 /auth-api 反向代理）───
+            if ! grep -q "location /auth-api" $NGINX_CONF; then
+              # 在 server 块内的 location / 之前插入反向代理配置
+              sed -i '/location \/{ i\
+    # 企业微信认证 API 反向代理\
+    location /auth-api/ {\
+        proxy_pass http://127.0.0.1:3001/;\
+        proxy_http_version 1.1;\
+        proxy_set_header Host $host;\
+        proxy_set_header X-Real-IP $remote_addr;\
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\
+        proxy_set_header X-Forwarded-Proto $scheme;\
+    }\
+}' $NGINX_CONF
+              echo "✅ Nginx 配置已更新"
+            else
+              echo "ℹ️  Nginx 配置无需更新（反向代理已存在）"
+            fi
+
+            # ── 9. 重载 Nginx ─────────────────────────────────
+            nginx -s reload
+            echo "✅ Nginx 已重载"
+
+            # ── 10. 健康检查 ──────────────────────────────────
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/health 2>/dev/null || echo "000")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ 后端健康检查通过 (HTTP $HTTP_STATUS)"
+            else
+              echo "⚠️  后端健康检查: HTTP $HTTP_STATUS"
+            fi
+
+            # ── 11. 替换旧后端目录 ─────────────────────────────
+            cd $DEPLOY_DIR
+            rm -rf server
+            mv server_new server
+            echo "✅ 后端目录已更新"
+
+            echo ""
+            echo "════════════════════════════════════════════"
+            echo "  🎉 部署完成！"
+            echo "  📄 前端: https://docs.whohi.cn"
+            echo "  🔐 认证: https://docs.whohi.cn/auth-api"
+            echo "════════════════════════════════════════════"

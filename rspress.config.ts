@@ -1,9 +1,45 @@
 import { defineConfig } from '@rspress/core';
+import { pluginAuth } from './plugins/auth';
 
 export default defineConfig({
   root: 'docs',
-  title: '掌上乾坤 - 手机连锁门店数智化解决方案',
+  title: '掌上乾坤-赋能中心',
   description: '10年深耕，服务5000+门店。专注手机连锁门店管理系统，从进销存到会员营销，从单店到连锁全覆盖。',
+
+  // ── 页面权限控制（企业微信登录）────────────────────────────────
+  plugins: [
+    pluginAuth({
+      // enabled: true, // 设为 false 可临时关闭权限控制
+      enabled: true,
+
+      // 后端认证服务地址
+      // 开发环境用 http://localhost:3001
+      // 生产环境用 https://docs.whohi.cn/auth-api
+      apiBase: 'https://docs.whohi.cn/auth-api',
+
+      // 保护区域：以下路径需要登录才能访问
+      protectedPaths: [
+        '/z1/',         // Z1 操作手册（全部）
+        '/product/',    // 产品功能（可选）
+      ],
+
+      // 公开路径：即使在 protectedPaths 内也不需要登录
+      publicPaths: [
+        '/',            // 首页
+        '/solution/',   // 解决方案
+        '/cases/',      // 成功案例
+        '/industry-news/', // 行业资讯
+        '/about/',      // 关于我们
+        '/resources/',  // 资源中心
+      ],
+
+      // 右上角显示已登录用户徽章
+      showUserBadge: true,
+
+      // 生产环境请填写实际域名
+      trustedDomain: 'https://docs.whohi.cn',
+    }),
+  ],
   themeConfig: {
     logo: {
       image: '/logo.jpg',
@@ -78,9 +114,8 @@ export default defineConfig({
       ],
       '/about/': [
         {
-          text: '关于我们',
+          text: '更新日志',
           items: [
-            { text: '公司简介', link: '/about/' },
             { text: '更新日志', link: '/about/changelog' },
           ],
         },

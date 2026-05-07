@@ -23,6 +23,12 @@ npm-debug.log*
 .env.local
 .env.*.local
 
+# Example auth config (contains placeholder credentials)
+auth-users.js
+
 # Misc
 *.local
 .cache/
+
+# Claude Code settings
+.claude/

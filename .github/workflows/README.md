@@ -1,36 +1,104 @@
-# 手机行业资讯自动更新
+# GitHub Actions 部署配置指南
 
-本项目使用 GitHub Actions 每小时自动更新手机行业资讯。
+本文档说明如何在 GitHub 仓库中配置 Secrets，使 Actions 能正确部署到服务器。
 
-## 设置步骤
+---
 
-### 1. 获取 Exa API Key
+## 需要的 Secrets
 
-1. 访问 [Exa API](https://exa.ai) 注册账号
-2. 获取免费 API Key（有免费额度）
-3. 在 GitHub 仓库设置 secrets：
-   - 进入仓库 **Settings** → **Secrets and variables** → **Actions**
-   - 添加 `EXA_API_KEY` 并填入你的 API Key
+在 GitHub 仓库 → **Settings** → **Secrets and variables** → **Actions** 中添加以下 Secrets：
 
-### 2. 启用 Actions
+### 1. 服务器连接配置
 
-在 GitHub 仓库的 **Actions** 页面确认 workflow 已启用。
+| Secret 名称 | 值 | 说明 |
+|------------|------|------|
+| `SERVER_HOST` | `106.54.198.58` | 服务器 IP 地址 |
+| `SERVER_PORT` | `22` | SSH 端口（默认 22） |
+| `SERVER_USER` | `root` | SSH 用户名 |
+| `SERVER_SSH_KEY` | SSH 私钥全文 | 复制 claw.pem 的内容 |
 
-### 3. 手动触发
+> **如何获取 `SERVER_SSH_KEY`？**
+> 在本地执行：
+> ```powershell
+> type "C:\Users\Administrator\Documents\WXWork\1688855782268707\Cache\File\2026-04\claw.pem"
+> ```
+> 复制全部内容（包括 `-----BEGIN...` 和 `-----END...`），粘贴到 GitHub Secret 值中。
 
-可以在 GitHub Actions 页面手动点击 "Run workflow" 立即触发。
+### 2. 企业微信认证配置
 
-## 本地测试
+| Secret 名称 | 值 |
+|------------|------|
+| `MULTI_WECOM_CONFIG` | JSON 数组（每个企业的凭证） |
+| `SESSION_SECRET` | 随机字符串（32位以上） |
 
-```bash
-npm install
-EXA_API_KEY=your_api_key npm run update-news
+#### MULTI_WECOM_CONFIG 格式（单行 JSON）
+
+```json
+[
+  {
+    "id": "zsqk",
+    "name": "掌上乾坤",
+    "logo": "",
+    "corpId": "ww你的企业ID",
+    "agentId": "1000001",
+    "agentSecret": "你的应用Secret",
+    "allowedUsers": ""
+  }
+]
 ```
 
-## 工作原理
+> **重要**：粘贴到 GitHub Secret 时，整个 JSON 必须写成**一行**，不能用多行格式。
 
-1. GitHub Actions 每小时自动触发
-2. 使用 Exa API 搜索手机行业最新资讯
-3. 生成 Markdown 格式的行业资讯报告
-4. 自动更新资源中心索引
-5. 提交到仓库
+#### SESSION_SECRET 生成
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+---
+
+## 配置步骤
+
+```
+GitHub 仓库 → Settings → Secrets and variables → Actions → New repository secret
+```
+
+添加以下 6 个 Secret：
+
+```
+SERVER_HOST          → 106.54.198.58
+SERVER_PORT          → 22
+SERVER_USER          → root
+SERVER_SSH_KEY       → （claw.pem 文件内容）
+MULTI_WECOM_CONFIG   → [{"id":"zsqk",...}]
+SESSION_SECRET       → （随机字符串）
+```
+
+---
+
+## 部署流程
+
+每次 `git push` 到 `master` 分支自动触发：
+
+1. ✅ 构建 Rspress 静态站点
+2. ✅ 打包上传到服务器
+3. ✅ 解压前端 → `/www/wwwroot/z1-docs/doc_build/`
+4. ✅ 解压后端 → `/www/wwwroot/z1-docs/server/`
+5. ✅ 从 Secrets 创建 `.env` 文件
+6. ✅ `npm install --production` 安装后端依赖
+7. ✅ `pm2 restart` 重启认证服务（端口 3001）
+8. ✅ 更新 Nginx 添加 `/auth-api/` 反向代理
+9. ✅ `nginx -s reload` 重载 Nginx
+10. ✅ 健康检查确认服务正常
+
+---
+
+## 触发部署
+
+```bash
+git add .
+git commit -m "feat: 企业微信登录"
+git push origin master
+```
+
+或 GitHub → **Actions** → **Deploy Docs + Auth Server** → **Run workflow**
