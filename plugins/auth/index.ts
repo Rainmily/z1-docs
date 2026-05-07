@@ -50,7 +50,15 @@ export function pluginAuth(options: WeComAuthPluginOptions = {}): RspressPlugin 
     name: 'plugin-auth',
 
     // 注入全局守卫组件（每个页面加载时执行）
-    globalUIComponents: [[authGuardPath, { name: 'AuthGuard' }]],
+    globalUIComponents: [[authGuardPath, {
+      name: 'AuthGuard',
+      enabled,
+      apiBase,
+      protectedPaths,
+      publicPaths,
+      showUserBadge,
+      trustedDomain,
+    }]],
 
     // 向客户端运行时注入配置
     addRuntimeModules() {

@@ -134,22 +134,31 @@ function AuthErrorDisplay({ message }: { message: string }) {
   );
 }
 
+// ── 主守卫组件 Props ────────────────────────────────────────────
+interface AuthGuardProps {
+  children: React.ReactNode;
+  enabled?: boolean;
+  apiBase?: string;
+  protectedPaths?: string[];
+  publicPaths?: string[];
+  showUserBadge?: boolean;
+  trustedDomain?: string;
+}
+
 // ── 主守卫组件 ──────────────────────────────────────────────────
-export default function AuthGuard({ children }: { children: React.ReactNode }) {
+export default function AuthGuard({
+  children,
+  enabled = true,
+  apiBase = '/auth-api',
+  protectedPaths = [],
+  publicPaths = [],
+  showUserBadge = false,
+  trustedDomain = '/auth-api',
+}: AuthGuardProps) {
   // SSR 检查：服务端渲染时返回空
   if (typeof window === 'undefined') {
     return <>{children}</>;
   }
-
-  const config: AuthConfig = window.__ZSQK_AUTH_CONFIG__ ?? {
-    enabled: false,
-    apiBase: '/auth-api',
-    protectedPaths: [],
-    publicPaths: [],
-    showUserBadge: false,
-  };
-
-  const { enabled, apiBase, protectedPaths, publicPaths, showUserBadge } = config;
   const [session, setSession] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
