@@ -155,27 +155,24 @@ function LoginButtonPage({ company, apiBase, onBack, onError }: {
       return;
     }
     try {
-      const endpoint = isMobile ? '/auth/oauth-url' : '/auth/qr-url';
+      // 统一使用 OAuth2.0 授权（网页登录）
+      // 企业微信应用「网页登录」功能支持所有端
+      const endpoint = '/auth/oauth-url';
       const res = await fetch(`${apiBase}${endpoint}?companyId=${encodeURIComponent(company.id)}`, {
         credentials: 'include',
       });
       const data = await res.json();
 
       if (data.url) {
-        if (isMobile) {
-          // 移动端：直接跳转
-          window.location.href = data.url;
-        } else {
-          // PC端：新窗口打开扫码页
-          window.open(data.url, '_blank', 'width=500,height=600,scrollbars=no');
-        }
+        // 跳转到企业微信授权页面
+        window.location.href = data.url;
       } else {
         onError?.('获取登录链接失败，请稍后重试');
       }
     } catch {
       onError?.('无法连接认证服务，请检查网络');
     }
-  }, [company.id, apiBase, isMobile, onError]);
+  }, [company.id, apiBase, onError]);
 
   return (
     <div
@@ -255,7 +252,7 @@ function LoginButtonPage({ company, apiBase, onBack, onError }: {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348z"/>
           </svg>
-          {isMobile ? '微信授权登录' : '企业微信扫码登录'}
+          企业微信授权登录
         </button>
 
         {/* 返回按钮（多企业模式） */}
@@ -277,9 +274,7 @@ function LoginButtonPage({ company, apiBase, onBack, onError }: {
         )}
 
         <p style={{ marginTop: '20px', fontSize: '12px', color: '#ccc', lineHeight: 1.6 }}>
-          {isMobile
-            ? '点击后将跳转至企业微信进行身份验证'
-            : '请使用企业微信 App 扫描二维码登录'}
+          点击后将跳转至企业微信进行身份验证
           <br />
           仅限企业内部成员访问
         </p>
