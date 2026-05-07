@@ -150,6 +150,10 @@ function LoginButtonPage({ company, apiBase, onBack, onError }: {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const handleLogin = useCallback(async () => {
+    if (!company?.id) {
+      onError?.('企业信息加载失败，请刷新页面重试');
+      return;
+    }
     try {
       const endpoint = isMobile ? '/auth/oauth-url' : '/auth/qr-url';
       const res = await fetch(`${apiBase}${endpoint}?companyId=${encodeURIComponent(company.id)}`, {
@@ -340,6 +344,16 @@ export default function WeComLogin({ apiBase, onError }: LoginPageProps) {
 
   // 已选企业 → 显示登录按钮页
   const company = selectedCompany || companies[0];
+
+  // 防御性检查：没有可用企业
+  if (!company?.id) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: 'system-ui, sans-serif', color: '#666' }}>
+        <span>正在加载企业信息...</span>
+      </div>
+    );
+  }
+
   return (
     <LoginButtonPage
       company={company}
