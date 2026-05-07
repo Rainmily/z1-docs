@@ -81,7 +81,14 @@ jobs:
             tar -xzf server.tar.gz
             # 清理 macOS 产生的 ._ 文件
             find . -name '._*' -delete 2>/dev/null || true
-            mv server server_new
+            # 检查打包结构：文件可能散落在根目录或包装在 server/ 下
+            if [ -d "./server" ]; then
+              mv server server_new
+            else
+              # 文件散落了，创建 server_new 并移动文件
+              mkdir -p server_new
+              mv src package.json README.md setup.sh DEPLOY.md .env.example server_new/ 2>/dev/null || true
+            fi
             rm server.tar.gz
             echo "✅ 后端服务已解压"
 
