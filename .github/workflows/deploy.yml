@@ -90,6 +90,7 @@ SERVER_URL=https://docs.whohi.cn/auth-api
 SESSION_SECRET=${{ secrets.SESSION_SECRET }}
 NODE_ENV=production
 ENVEOF
+            # .env 配置文件已创建
             echo "✅ .env 配置文件已创建"
 
             # ── 4. 安装后端依赖 ────────────────────────────────
