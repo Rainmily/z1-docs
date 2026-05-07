@@ -180,7 +180,6 @@ function LoginPanelPage({ company, apiBase, onBack }: {
               login_type: 'CorpApp',
               appid: company.corpId,
               agentid: company.agentId,
-              redirect_uri: `${apiBase}/auth/callback`,
               state: JSON.stringify({ companyId: company.id }),
               redirect_type: 'callback',
             },
@@ -196,8 +195,8 @@ function LoginPanelPage({ company, apiBase, onBack }: {
                 });
                 const data = await res.json();
                 if (data.token) {
-                  // 登录成功，跳转到成功页
-                  window.location.href = `/auth/success?token=${encodeURIComponent(data.token)}`;
+                  // 登录成功，跳转到首页（AuthGuard 会处理 URL 中的 auth_token 参数）
+                  window.location.href = `/?auth_token=${encodeURIComponent(data.token)}`;
                 } else {
                   console.error('[WWLogin] No token returned:', data);
                 }
@@ -310,7 +309,7 @@ function LoginPanelPage({ company, apiBase, onBack }: {
 
         {/* 版本标记 */}
         <p style={{ marginTop: '12px', fontSize: '10px', color: '#ddd' }}>
-          v2024.05.07-SDK
+          v{new Date().toISOString().slice(0,16).replace(/[:-]/g,'')}
         </p>
       </div>
 

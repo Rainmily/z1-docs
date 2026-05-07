@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import LoginButton from './LoginButton';
+import WeComLogin from './WeComLogin';
 
 interface AuthConfig {
   enabled: boolean;
@@ -167,6 +167,7 @@ export default function AuthGuard({
   const [isLoading, setIsLoading] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isAuthPage, setIsAuthPage] = useState(false); // 当前是否在认证回调页
+  const [accessBlocked, setAccessBlocked] = useState(false); // 受保护页面访问被拦截
 
   // ── 初始化：检查 URL 参数 + localStorage ─────────────────────
   useEffect(() => {
@@ -218,24 +219,34 @@ export default function AuthGuard({
 
     // 公开路径：跳过
     if (matchPath(pathname, publicPaths)) {
+      setAccessBlocked(false);
       return;
     }
 
     // 配置了 protectedPaths：只保护这些路径
     if (protectedPaths.length > 0) {
       const isProtected = matchPath(pathname, protectedPaths);
-      if (!isProtected) return;
+      if (!isProtected) {
+        setAccessBlocked(false);
+        return;
+      }
 
-      // 受保护但无 session → 重定向到登录
+      // 受保护但无 session → 拦截访问，只显示登录面板
       const currentSession = loadSession();
       if (!currentSession) {
         setSession(null);
+        setAccessBlocked(true);
+      } else {
+        setAccessBlocked(false);
       }
     } else {
       // 没有配置 protectedPaths：站点整体需要登录
       const currentSession = loadSession();
       if (!currentSession) {
         setSession(null);
+        setAccessBlocked(true);
+      } else {
+        setAccessBlocked(false);
       }
     }
   }, [window.location.pathname, isLoading, enabled, protectedPaths, publicPaths]);
@@ -366,13 +377,17 @@ export default function AuthGuard({
 
   // ── 未登录但不需要登录 → 显示主动登录入口 ─────────────────────
   // 当用户访问公开页面但想主动登录时，显示登录按钮
+  // 但如果 accessBlocked 为 true（受保护页面），只显示登录面板
+  if (accessBlocked) {
+    return <WeComLogin apiBase={safeApiBase} onError={setLoginError} />;
+  }
+
   return (
     <>
       {children}
-      <LoginButton
+      <WeComLogin
         apiBase={safeApiBase}
-        onLoginSuccess={(token) => handleLoginSuccess(token)}
-        onLoginError={setLoginError}
+        onError={setLoginError}
       />
     </>
   );
