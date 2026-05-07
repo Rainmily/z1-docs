@@ -34,8 +34,10 @@ jobs:
 
       # ── 3. 打包构建产物 ──────────────────────────────────────
       - name: Package build artifacts
+        env:
+          COPYFILE_DISABLE: '1'
         run: |
-          tar -czf doc_build.tar.gz -C doc_build .
+          tar -czf doc_build.tar.gz doc_build
           tar -czf server.tar.gz server/ --exclude='server/node_modules' --exclude='server/.env'
 
       # ── 4. 部署到服务器 ─────────────────────────────────────
