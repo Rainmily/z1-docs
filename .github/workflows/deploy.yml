@@ -97,7 +97,7 @@ jobs:
               "NODE_ENV=production" \
               > $DEPLOY_DIR/server_new/.env
             # .env 配置文件已创建
-            echo "✅ .env 配置文件已创建"
+            echo "✅ .env 配置文件已创建 ✓"
 
             # ── 4. 安装后端依赖 ────────────────────────────────
             cd $DEPLOY_DIR/server_new
