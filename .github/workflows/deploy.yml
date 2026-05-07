@@ -37,7 +37,7 @@ jobs:
         env:
           COPYFILE_DISABLE: '1'
         run: |
-          tar -czf doc_build.tar.gz doc_build
+          tar -czf doc_build.tar.gz -C doc_build .
           tar -czf server.tar.gz --exclude='node_modules' --exclude='.env' -C server .
 
       # ── 4. 部署到服务器 ─────────────────────────────────────
@@ -68,12 +68,12 @@ jobs:
 
             # ── 1. 解压前端构建产物 ───────────────────────────
             cd $DEPLOY_DIR
-            rm -rf doc_build
+            rm -rf doc_build 2>/dev/null || true
             tar -xzf doc_build.tar.gz
             # 清理 macOS 产生的 ._ 文件
             find . -name '._*' -delete 2>/dev/null || true
             rm doc_build.tar.gz
-            chown -R lighthouse:lighthouse doc_build
+            chown -R lighthouse:lighthouse .
             echo "✅ 前端静态站点已解压"
 
             # ── 2. 解压后端服务 ────────────────────────────────
