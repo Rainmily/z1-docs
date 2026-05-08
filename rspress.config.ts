@@ -1,8 +1,14 @@
 import { defineConfig } from '@rspress/core';
 import { pluginAuth } from './plugins/auth';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   root: 'docs',
+  themeDir: path.join(__dirname, 'theme'),
   title: '掌上乾坤-赋能中心',
   description: '10年深耕，服务5000+门店。专注手机连锁门店管理系统，从进销存到会员营销，从单店到连锁全覆盖。',
 
@@ -16,9 +22,9 @@ export default defineConfig({
       enabled: true,
 
       // 后端认证服务地址
-      // 开发环境用 http://localhost:3001
+      // 开发环境用 http://localhost:3001（需先运行 node mock-server.js）
       // 生产环境用 https://docs.whohi.cn/auth-api
-      apiBase: 'https://docs.whohi.cn/auth-api',
+      apiBase: 'http://localhost:3001',
 
       // 保护区域：以下路径需要登录才能访问
       protectedPaths: [
@@ -35,6 +41,7 @@ export default defineConfig({
         '/about/',      // 更新日志
         '/resources/',  // 资源中心
         '/auth/login',  // 登录页面
+        '/auth/callback', // OAuth 回调页面
       ],
 
       // 右上角显示已登录用户徽章

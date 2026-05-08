@@ -21,9 +21,13 @@ interface LoginPageProps {
 function LoginPanel({ company, apiBase }: { company: Company; apiBase: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const loginRef = useRef<any>(null);
+  const [sdkStatus, setSdkStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const hasCorpId = !!company.corpId && !!company.agentId;
 
   useEffect(() => {
-    if (!containerRef.current || !company.corpId || !company.agentId) {
+    // 没有 corpId/agentId 时显示手动登录入口
+    if (!hasCorpId) {
+      setSdkStatus('error');
       return;
     }
 
@@ -37,7 +41,10 @@ function LoginPanel({ company, apiBase }: { company: Company; apiBase: string })
 
     script.onload = () => {
       const ww = (window as any).wx;
-      if (!ww || !containerRef.current) return;
+      if (!ww || !containerRef.current) {
+        setSdkStatus('error');
+        return;
+      }
 
       try {
         loginRef.current = ww.createWWLoginPanel({
@@ -46,8 +53,8 @@ function LoginPanel({ company, apiBase }: { company: Company; apiBase: string })
             login_type: 'CorpApp',
             appid: company.corpId,
             agentid: company.agentId,
-            redirect_uri: `${window.location.origin}/auth/callback`,
-            state: JSON.stringify({ companyId: company.id }),
+            redirect_uri: encodeURIComponent(`${window.location.origin}/auth/callback`),
+            state: encodeURIComponent(JSON.stringify({ companyId: company.id })),
             redirect_type: 'callback',
           },
           onLoginSuccess: async ({ code }: { code: string }) => {
@@ -74,9 +81,15 @@ function LoginPanel({ company, apiBase }: { company: Company; apiBase: string })
             console.error('[WWLogin] 登录失败:', err);
           },
         });
+        setSdkStatus('ready');
       } catch (err) {
         console.error('[WWLogin] 创建登录面板失败:', err);
+        setSdkStatus('error');
       }
+    };
+
+    script.onerror = () => {
+      setSdkStatus('error');
     };
 
     document.body.appendChild(script);
@@ -87,7 +100,7 @@ function LoginPanel({ company, apiBase }: { company: Company; apiBase: string })
         loginRef.current = null;
       }
     };
-  }, [company, apiBase]);
+  }, [company, apiBase, hasCorpId]);
 
   return (
     <div
@@ -146,7 +159,33 @@ function LoginPanel({ company, apiBase }: { company: Company; apiBase: string })
         </p>
 
         {/* 登录面板容器 */}
-        <div ref={containerRef} style={{ minHeight: '300px' }} />
+        <div ref={containerRef} style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {sdkStatus === 'loading' && (
+            <div style={{ textAlign: 'center', color: '#999' }}>
+              <div style={{ fontSize: '14px', marginBottom: '8px' }}>正在加载登录组件...</div>
+            </div>
+          )}
+          {sdkStatus === 'error' && !hasCorpId && (
+            <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+              <p style={{ fontSize: '14px', marginBottom: '12px' }}>
+                当前企业未配置企业微信应用
+              </p>
+              <p style={{ fontSize: '12px', color: '#ccc' }}>
+                请联系管理员配置 corpId 和 agentId
+              </p>
+            </div>
+          )}
+          {sdkStatus === 'error' && hasCorpId && (
+            <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+              <p style={{ fontSize: '14px', marginBottom: '12px' }}>
+                登录组件加载失败
+              </p>
+              <p style={{ fontSize: '12px', color: '#ccc' }}>
+                请检查网络连接后刷新页面重试
+              </p>
+            </div>
+          )}
+        </div>
 
         <p style={{ marginTop: '16px', fontSize: '12px', color: '#ccc', lineHeight: 1.6 }}>
           请使用企业微信扫码登录
@@ -156,7 +195,7 @@ function LoginPanel({ company, apiBase }: { company: Company; apiBase: string })
 
         {/* 版本标记 */}
         <p style={{ marginTop: '12px', fontSize: '10px', color: '#ddd' }}>
-          v{new Date().toISOString().slice(0, 16).replace(/[:-]/g, '')}
+          掌上乾坤 v1.0
         </p>
       </div>
 
@@ -309,9 +348,43 @@ export default function WeComLogin({ apiBase }: LoginPageProps) {
       .finally(() => setIsLoading(false));
   }, [apiBase]);
 
-  // SSR 时直接返回登录面板，避免 hydration 不一致
+  // SSR 时直接返回占位符，避免 hydration 不一致
   if (!isMounted) {
-    return <LoginPanel company={{ id: 'default', name: '企业微信' }} apiBase={apiBase} />;
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          padding: '20px',
+        }}
+      >
+        <div style={{
+          background: '#fff',
+          borderRadius: '16px',
+          padding: '40px 36px',
+          width: '100%',
+          maxWidth: '400px',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            background: 'linear-gradient(135deg, #1aad19, #07c160)',
+            borderRadius: '16px',
+            margin: '0 auto 20px',
+          }} />
+          <h2 style={{ margin: '0 0 6px', fontSize: '22px', color: '#1a1a1a', fontWeight: 600 }}>
+            正在加载...
+          </h2>
+        </div>
+      </div>
+    );
   }
 
   if (isLoading) {

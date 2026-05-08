@@ -9,6 +9,10 @@
 
 import type { RspressPlugin } from '@rspress/shared';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface WeComAuthPluginOptions {
   /** 是否启用权限控制，默认 true */
@@ -39,7 +43,7 @@ export function pluginAuth(options: WeComAuthPluginOptions = {}): RspressPlugin 
     apiBase = 'http://localhost:3001',
     protectedPaths = [],
     publicPaths = [],
-    showUserBadge = false,
+    showUserBadge = true,
     trustedDomain = 'http://localhost:3001',
   } = options;
 
@@ -50,15 +54,7 @@ export function pluginAuth(options: WeComAuthPluginOptions = {}): RspressPlugin 
     name: 'plugin-auth',
 
     // 注入全局守卫组件
-    globalUIComponents: [[authGuardPath, {
-      name: 'AuthGuard',
-      enabled,
-      apiBase,
-      protectedPaths,
-      publicPaths,
-      showUserBadge,
-      trustedDomain,
-    }]],
+    globalUIComponents: [authGuardPath],
 
     // 向客户端运行时注入配置
     addRuntimeModules() {
@@ -79,13 +75,31 @@ export function pluginAuth(options: WeComAuthPluginOptions = {}): RspressPlugin 
       };
     },
 
-    // 扩展构建配置
+    // 扩展构建配置 - 直接注入脚本到 HTML
     builderConfig: {
       source: {
         define: {
           // 环境变量（供前端使用）
           __AUTH_API_BASE__: JSON.stringify(apiBase),
         },
+      },
+      html: {
+        tags: [
+          {
+            tag: 'script',
+            attrs: { 'data-inline': true },
+            children: `
+              window.__ZSQK_AUTH_CONFIG__ = {
+                enabled: ${JSON.stringify(enabled)},
+                apiBase: ${JSON.stringify(apiBase)},
+                protectedPaths: ${JSON.stringify(protectedPaths)},
+                publicPaths: ${JSON.stringify(publicPaths)},
+                showUserBadge: ${JSON.stringify(showUserBadge)},
+                trustedDomain: ${JSON.stringify(trustedDomain)},
+              };
+            `,
+          },
+        ],
       },
     },
   };

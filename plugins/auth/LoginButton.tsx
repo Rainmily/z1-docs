@@ -22,7 +22,7 @@ export default function LoginButton({ apiBase, onLoginSuccess, onLoginError }: L
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     // 动态加载企业信息
@@ -38,6 +38,23 @@ export default function LoginButton({ apiBase, onLoginSuccess, onLoginError }: L
       });
   }, [apiBase]);
 
+  // 响应式检测移动设备
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Base64 编码（支持 Unicode）
+  const safeBtoa = (str: string): string => {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) =>
+      String.fromCharCode(parseInt(p1, 16))
+    ));
+  };
+
   const handleLogin = async (company: Company) => {
     setIsLoading(true);
     try {
@@ -52,10 +69,16 @@ export default function LoginButton({ apiBase, onLoginSuccess, onLoginError }: L
         if (isMobile) {
           window.location.href = data.url;
         } else {
-          // PC端打开新窗口
+          // PC端：先设置登录状态为处理中，然后打开新窗口
+          // 用户必须在点击回调中手动触发登录成功
+          const loginId = Date.now().toString();
+          sessionStorage.setItem('wecom_login_pending', loginId);
+
+          // 打开新窗口（用户触发，不会被拦截）
           const popup = window.open(data.url, 'wecom-login', 'width=500,height=600,scrollbars=no');
-          // 监听新窗口关闭，轮询 session
+
           if (popup) {
+            // 监听新窗口关闭，轮询 session
             const checkInterval = setInterval(() => {
               if (popup.closed) {
                 clearInterval(checkInterval);
@@ -64,11 +87,15 @@ export default function LoginButton({ apiBase, onLoginSuccess, onLoginError }: L
                 if (session) {
                   const sessionData = JSON.parse(session);
                   if (sessionData.expires > Date.now()) {
-                    onLoginSuccess?.(btoa(JSON.stringify(sessionData)));
+                    onLoginSuccess?.(safeBtoa(JSON.stringify(sessionData)));
                   }
                 }
+                sessionStorage.removeItem('wecom_login_pending');
               }
             }, 500);
+          } else {
+            // Popup 被拦截，使用 iframe 或直接跳转
+            onLoginError?.('请允许弹出窗口以完成登录');
           }
         }
       } else {
