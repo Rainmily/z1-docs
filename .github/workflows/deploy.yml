@@ -35,6 +35,7 @@ jobs:
         run: npm run build
 
       # ── 3. 直接 SCP 上传构建产物（避免 tarball 打包/解压问题）──
+      # 只上传 doc_build 和 server/src，避免覆盖服务器的 .env 文件
       - name: Deploy to server via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -42,7 +43,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "doc_build,server"
+          source: "doc_build,server/src"
           target: "/www/wwwroot/z1-docs/"
           strip_components: 0
 
@@ -70,14 +71,22 @@ jobs:
 
             if [ ! -f "$DEPLOY_DIR/server/src/index.js" ]; then
               echo "❌ server/src/index.js 不存在，SCP 上传失败！"
-              ls "$DEPLOY_DIR/server/" 2>/dev/null || echo "server 不存在"
+              ls "$DEPLOY_DIR/server/src/" 2>/dev/null || echo "server/src 不存在"
               exit 1
             fi
-            echo "✅ 后端服务文件完整 (server/)"
+            echo "✅ 后端服务文件完整 (server/src/)"
 
-            # ── 2. 从 GitHub Secret 写入 .env 文件 ─────────────────
-            echo "$SERVER_ENV_CONFIG" | base64 -d > "$DEPLOY_DIR/server/.env"
-            echo "✅ .env 配置文件已写入"
+            # ── 2. 仅当 .env 不存在时才从 Secret 创建（服务器保留密钥）──
+            if [ ! -s "$DEPLOY_DIR/server/.env" ]; then
+              if [ -n "$SERVER_ENV_CONFIG" ]; then
+                echo "$SERVER_ENV_CONFIG" | base64 -d > "$DEPLOY_DIR/server/.env"
+                echo "✅ .env 配置文件已创建"
+              else
+                echo "⚠️  SERVER_ENV_CONFIG 为空且 .env 不存在，跳过创建"
+              fi
+            else
+              echo "ℹ️  .env 文件已存在，保留服务器密钥"
+            fi
 
             # ── 3. 安装后端依赖 ────────────────────────────────
             cd "$DEPLOY_DIR/server"
