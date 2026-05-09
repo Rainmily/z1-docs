@@ -94,15 +94,8 @@ jobs:
             fi
             echo "✅ 前端静态站点已解压"
 
-            # ── 3. 创建 .env（heredoc 直接写入，避免 printf 注入问题）──
-            cat > "$DEPLOY_DIR/server_new/.env" << 'DOTENV'
-PORT=3001
-FRONTEND_URL=https://docs.whohi.cn
-SERVER_URL=https://docs.whohi.cn/auth-api
-NODE_ENV=production
-MULTI_WECOM_CONFIG='[{"id":"zsqk","name":"掌上乾坤","logo":"","corpId":"ww00cc4c12ff49ae86","agentId":"1000030","agentSecret":"13NMGZq7c-gGXN0jiaiPlLXY0NF3uot7W7u8Tm3D890","allowedUsers":""}]'
-SESSION_SECRET=05063ee53d83535fd5bbcc77c26c78977136d9921544d970ba3891dd93473633
-DOTENV
+            # ── 3. 创建 .env（base64 解码写入，避免 YAML/heredoc 引号问题）──
+            echo 'UE9SVD0zMDAxCkZST05URU5EX1VSTD1odHRwczovL2RvY3Mud2hvaGkuY24KU0VSVkVSX1VSTD1odHRwczovL2RvY3Mud2hvaGkuY24vYXV0aC1hcGkKTk9ERV9FTlY9cHJvZHVjdGlvbgpNVUxUSV9XRUNPTV9DT05GSUc9W3siaWQiOiJ6c3FrIiwibmFtZSI6IuaOjOS4iuS5vuWdpCIsImxvZ28iOiIiLCJjb3JwSWQiOiJ3dzAwY2M0YzEyZmY0OWFlODYiLCJhZ2VudElkIjoiMTAwMDAzMCIsImFnZW50U2VjcmV0IjoiMTNOTUdacTdjLWdHWE4wamlhaVBsTFhZME5GM3VvdDdXN3U4VG0zRDg5MCIsImFsbG93ZWRVc2VycyI6IiJ9XQpTRVNTSU9OX1NFQ1JFVD0wNTA2M2VlNTNkODM1MzVmZDViYmNjNzdjMjZjNzg5NzcxMzZkOTkyMTU0NGQ5NzBiYTM4OTFkZDkzNDczNjMzCg==' | base64 -d > "$DEPLOY_DIR/server_new/.env"
             echo "✅ .env 配置文件已创建 ✓"
 
             # ── 4. 安装后端依赖 ────────────────────────────────
