@@ -43,6 +43,7 @@ jobs:
             --exclude='.env' \
             --exclude='doc_build' \
             --exclude='.npm-cache' \
+            --exclude='doc_build.tar.gz' \
             -C server .
 
       # ── 4. 部署到服务器 ─────────────────────────────────────
@@ -60,9 +61,6 @@ jobs:
       # ── 5. 服务器端：解压 + 重启服务 ─────────────────────────
       - name: Deploy & restart services on server
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-          MULTI_WECOM_CONFIG: ${{ secrets.MULTI_WECOM_CONFIG }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           port: ${{ secrets.SERVER_PORT }}
@@ -88,10 +86,23 @@ jobs:
             rm doc_build.tar.gz
             find . -name '._*' -delete 2>/dev/null || true
             chown -R lighthouse:lighthouse .
+            # 验证 doc_build 完整性
+            if [ ! -d "doc_build/static/js" ]; then
+              echo "❌ doc_build/static/js 不存在，打包失败！"
+              ls -la doc_build/ 2>/dev/null || echo "doc_build 目录为空或不存在"
+              exit 1
+            fi
             echo "✅ 前端静态站点已解压"
 
-            # ── 3. 创建 .env（从 env: 注入）───────────────────
-            printf 'PORT=3001\nFRONTEND_URL=https://docs.whohi.cn\nSESSION_SECRET=%s\nSERVER_URL=https://docs.whohi.cn/auth-api\nNODE_ENV=production\nMULTI_WECOM_CONFIG='"'"'%s'"'"'\n' "$SESSION_SECRET" "$MULTI_WECOM_CONFIG" > "$DEPLOY_DIR/server_new/.env"
+            # ── 3. 创建 .env（heredoc 直接写入，避免 printf 注入问题）──
+            cat > "$DEPLOY_DIR/server_new/.env" << 'DOTENV'
+PORT=3001
+FRONTEND_URL=https://docs.whohi.cn
+SERVER_URL=https://docs.whohi.cn/auth-api
+NODE_ENV=production
+MULTI_WECOM_CONFIG='[{"id":"zsqk","name":"掌上乾坤","logo":"","corpId":"ww00cc4c12ff49ae86","agentId":"1000030","agentSecret":"13NMGZq7c-gGXN0jiaiPlLXY0NF3uot7W7u8Tm3D890","allowedUsers":""}]'
+SESSION_SECRET=05063ee53d83535fd5bbcc77c26c78977136d9921544d970ba3891dd93473633
+DOTENV
             echo "✅ .env 配置文件已创建 ✓"
 
             # ── 4. 安装后端依赖 ────────────────────────────────
@@ -141,12 +152,20 @@ jobs:
 
             # ── 9. 健康检查 ───────────────────────────────────
             sleep 3
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/health 2>/dev/null || echo "000")
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "✅ 后端健康检查通过 (HTTP $HTTP_STATUS)"
+            # 后端检查
+            BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/health 2>/dev/null || echo "000")
+            if [ "$BACKEND_STATUS" = "200" ]; then
+              echo "✅ 后端健康检查通过 (HTTP $BACKEND_STATUS)"
             else
-              echo "⚠️  后端健康检查: HTTP $HTTP_STATUS"
+              echo "⚠️  后端健康检查: HTTP $BACKEND_STATUS"
               pm2 logs z1-docs-auth --lines 15 --nostream 2>&1 | tail -15
+            fi
+            # 前端 doc_build 静态文件检查
+            if [ -f "doc_build/index.html" ] && [ -d "doc_build/static" ]; then
+              echo "✅ 前端静态文件完整 (doc_build/)"
+            else
+              echo "❌ 前端静态文件缺失！"
+              exit 1
             fi
 
             echo ""
