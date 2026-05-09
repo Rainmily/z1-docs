@@ -38,7 +38,12 @@ jobs:
           COPYFILE_DISABLE: '1'
         run: |
           tar -czf doc_build.tar.gz -C doc_build .
-          tar -czf server.tar.gz --exclude='node_modules' --exclude='.env' -C server .
+          tar -czf server.tar.gz \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='doc_build' \
+            --exclude='.npm-cache' \
+            -C server .
 
       # ── 4. 部署到服务器 ─────────────────────────────────────
       - name: Deploy to server via SCP
@@ -69,31 +74,21 @@ jobs:
             DEPLOY_DIR="/www/wwwroot/z1-docs"
             NGINX_CONF="/www/server/nginx/conf/vhost/docs.whohi.cn.conf"
 
-            # ── 1. 解压前端构建产物 ───────────────────────────
+            # ── 1. 先解压后端 tarball 到临时目录，避免污染根目录 ──
             cd $DEPLOY_DIR
-            rm -rf doc_build 2>/dev/null || true
+            rm -rf server_new
+            mkdir server_new
+            tar -xzf server.tar.gz -C server_new
+            rm server.tar.gz
+            echo "✅ 后端服务已解压到 server_new/"
+
+            # ── 2. 解压前端（不会受后端影响）────────────────────
+            rm -rf doc_build
             tar -xzf doc_build.tar.gz
-            find . -name '._*' -delete 2>/dev/null || true
             rm doc_build.tar.gz
+            find . -name '._*' -delete 2>/dev/null || true
             chown -R lighthouse:lighthouse .
             echo "✅ 前端静态站点已解压"
-
-            # ── 2. 解压后端服务到临时目录 ────────────────────
-            rm -rf server_new
-            tar -xzf server.tar.gz
-            find . -name '._*' -delete 2>/dev/null || true
-            # 打包结构可能是 server/ 子目录，也可能直接散落在根目录
-            if [ -d "./server" ]; then
-              mv server server_new
-            else
-              mkdir -p server_new
-              # 把散落的文件移入 server_new/
-              for f in src package.json README.md setup.sh DEPLOY.md .env.example ecosystem.config.cjs ecosystem.config.js; do
-                [ -f "$f" ] && mv "$f" server_new/ 2>/dev/null || true
-              done
-            fi
-            rm server.tar.gz
-            echo "✅ 后端服务已解压（server_new/）"
 
             # ── 3. 创建 .env（从 env: 注入）───────────────────
             printf 'PORT=3001\nFRONTEND_URL=https://docs.whohi.cn\nSESSION_SECRET=%s\nSERVER_URL=https://docs.whohi.cn/auth-api\nNODE_ENV=production\nMULTI_WECOM_CONFIG='"'"'%s'"'"'\n' "$SESSION_SECRET" "$MULTI_WECOM_CONFIG" > "$DEPLOY_DIR/server_new/.env"
@@ -104,26 +99,24 @@ jobs:
             npm install --production
             echo "✅ 后端依赖已安装"
 
-            # ── 5. 原子替换 server 目录 ──────────────────────
-            cd $DEPLOY_DIR
-            rm -rf server_old 2>/dev/null || true
-            [ -d server ] && mv server server_old || true
-            mv server_new server
-            echo "✅ server_new → server（目录已替换）"
-
-            # ── 6. 停止旧 PM2 进程（杀掉占端口的残留进程）────
-            # 先找端口 3001 上的进程，杀掉
+            # ── 5. 清理旧进程 ──────────────────────────────
             OLD_PID=$(lsof -ti:3001 2>/dev/null) || true
             if [ -n "$OLD_PID" ]; then
               echo "杀掉旧进程 PID=$OLD_PID"
               kill -9 $OLD_PID 2>/dev/null || true
               sleep 1
             fi
-            # 删除旧 PM2 注册（不重启残留进程）
             pm2 delete z1-docs-auth 2>/dev/null || true
             echo "✅ 旧进程已清理"
 
-            # ── 7. 启动新服务（pm2 start src/index.js，不依赖 ecosystem.config.cjs）────
+            # ── 6. 原子替换 server 目录 ──────────────────────
+            cd $DEPLOY_DIR
+            rm -rf server_old 2>/dev/null || true
+            [ -d server ] && mv server server_old || true
+            mv server_new server
+            echo "✅ server_new → server（目录已替换）"
+
+            # ── 7. 启动新服务 ──────────────────────────────
             cd $DEPLOY_DIR/server
             export NODE_ENV=production
             export PORT=3001
@@ -153,7 +146,6 @@ jobs:
               echo "✅ 后端健康检查通过 (HTTP $HTTP_STATUS)"
             else
               echo "⚠️  后端健康检查: HTTP $HTTP_STATUS"
-              # 打印 PM2 日志辅助诊断
               pm2 logs z1-docs-auth --lines 15 --nostream 2>&1 | tail -15
             fi
 
