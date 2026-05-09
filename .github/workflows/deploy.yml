@@ -63,7 +63,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          timeout: 120s
+          timeout: 180s
           script: |
             set -e
             DEPLOY_DIR="/www/wwwroot/z1-docs"
@@ -104,21 +104,33 @@ jobs:
             npm install --production
             echo "✅ 后端依赖已安装"
 
-            # ── 5. 彻底停止旧 PM2 进程（关键！防止端口冲突）─────
-            # pkill 杀掉残留 Node 进程，pm2 kill 清空 PM2 内存状态
-            pkill -f "z1-docs-auth" 2>/dev/null || true
-            pm2 kill 2>/dev/null || true
-            echo "✅ PM2 已清空"
-
-            # ── 6. 原子替换 server 目录 ──────────────────────
+            # ── 5. 原子替换 server 目录 ──────────────────────
             cd $DEPLOY_DIR
             rm -rf server_old 2>/dev/null || true
             [ -d server ] && mv server server_old || true
             mv server_new server
             echo "✅ server_new → server（目录已替换）"
 
-            # ── 7. 启动新服务（从正确的 server/ 目录）─────────
-            pm2 start ecosystem.config.cjs
+            # ── 6. 停止旧 PM2 进程（杀掉占端口的残留进程）────
+            # 先找端口 3001 上的进程，杀掉
+            OLD_PID=$(lsof -ti:3001 2>/dev/null) || true
+            if [ -n "$OLD_PID" ]; then
+              echo "杀掉旧进程 PID=$OLD_PID"
+              kill -9 $OLD_PID 2>/dev/null || true
+              sleep 1
+            fi
+            # 删除旧 PM2 注册（不重启残留进程）
+            pm2 delete z1-docs-auth 2>/dev/null || true
+            echo "✅ 旧进程已清理"
+
+            # ── 7. 启动新服务（pm2 start src/index.js，不依赖 ecosystem.config.cjs）────
+            cd $DEPLOY_DIR/server
+            export NODE_ENV=production
+            export PORT=3001
+            pm2 start src/index.js \
+              --name z1-docs-auth \
+              --cwd $DEPLOY_DIR/server \
+              --interpreter node
             pm2 save
             echo "✅ 后端服务已启动"
 
