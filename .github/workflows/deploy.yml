@@ -73,30 +73,29 @@ jobs:
             cd $DEPLOY_DIR
             rm -rf doc_build 2>/dev/null || true
             tar -xzf doc_build.tar.gz
-            # 清理 macOS 产生的 ._ 文件
             find . -name '._*' -delete 2>/dev/null || true
             rm doc_build.tar.gz
             chown -R lighthouse:lighthouse .
             echo "✅ 前端静态站点已解压"
 
-            # ── 2. 解压后端服务 ────────────────────────────────
+            # ── 2. 解压后端服务到临时目录 ────────────────────
             rm -rf server_new
             tar -xzf server.tar.gz
-            # 清理 macOS 产生的 ._ 文件
             find . -name '._*' -delete 2>/dev/null || true
-            # 检查打包结构：文件可能散落在根目录或包装在 server/ 下
+            # 打包结构可能是 server/ 子目录，也可能直接散落在根目录
             if [ -d "./server" ]; then
               mv server server_new
             else
-              # 文件散落了，创建 server_new 并移动文件
               mkdir -p server_new
-              mv src package.json README.md setup.sh DEPLOY.md .env.example server_new/ 2>/dev/null || true
+              # 把散落的文件移入 server_new/
+              for f in src package.json README.md setup.sh DEPLOY.md .env.example ecosystem.config.cjs ecosystem.config.js; do
+                [ -f "$f" ] && mv "$f" server_new/ 2>/dev/null || true
+              done
             fi
             rm server.tar.gz
-            echo "✅ 后端服务已解压"
+            echo "✅ 后端服务已解压（server_new/）"
 
             # ── 3. 创建 .env（从 env: 注入）───────────────────
-            # 使用 printf 逐行写入，避免 YAML 多行字符串缩进问题
             printf 'PORT=3001\nFRONTEND_URL=https://docs.whohi.cn\nSESSION_SECRET=%s\nSERVER_URL=https://docs.whohi.cn/auth-api\nNODE_ENV=production\nMULTI_WECOM_CONFIG='"'"'%s'"'"'\n' "$SESSION_SECRET" "$MULTI_WECOM_CONFIG" > "$DEPLOY_DIR/server_new/.env"
             echo "✅ .env 配置文件已创建 ✓"
 
@@ -105,46 +104,46 @@ jobs:
             npm install --production
             echo "✅ 后端依赖已安装"
 
-            # ── 5. 停止旧服务 ─────────────────────────────────
-            pm2 stop z1-docs-auth 2>/dev/null || true
-            pm2 delete z1-docs-auth 2>/dev/null || true
-            echo "✅ 旧服务已停止"
+            # ── 5. 彻底停止旧 PM2 进程（关键！防止端口冲突）─────
+            # pkill 杀掉残留 Node 进程，pm2 kill 清空 PM2 内存状态
+            pkill -f "z1-docs-auth" 2>/dev/null || true
+            pm2 kill 2>/dev/null || true
+            echo "✅ PM2 已清空"
 
-            # ── 6. 启动新服务（使用 ecosystem.config.cjs）─────
-            pm2 start $DEPLOY_DIR/server_new/ecosystem.config.cjs
+            # ── 6. 原子替换 server 目录 ──────────────────────
+            cd $DEPLOY_DIR
+            rm -rf server_old 2>/dev/null || true
+            [ -d server ] && mv server server_old || true
+            mv server_new server
+            echo "✅ server_new → server（目录已替换）"
+
+            # ── 7. 启动新服务（从正确的 server/ 目录）─────────
+            pm2 start ecosystem.config.cjs
             pm2 save
             echo "✅ 后端服务已启动"
 
-            # ── 7. 等待服务就绪 ──────────────────────────────
-            sleep 3
-
-            # ── 8. 更新 Nginx 配置（添加 /auth-api 反向代理）───
+            # ── 8. 更新 Nginx 配置 ────────────────────────────
             if ! grep -q "location /auth-api" $NGINX_CONF; then
-              # 在 server 块内的 location / 之前插入反向代理配置
               AUTH_PROXY_BLOCK="    # 企业微信认证 API 反向代理\n    location /auth-api/ {\n        proxy_pass http://127.0.0.1:3001/;\n        proxy_http_version 1.1;\n        proxy_set_header Host \$host;\n        proxy_set_header X-Real-IP \$remote_addr;\n        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto \$scheme;\n    }"
               sed -i "/location \//i\\$AUTH_PROXY_BLOCK" $NGINX_CONF
               echo "✅ Nginx 配置已更新"
             else
-              echo "ℹ️  Nginx 配置无需更新（反向代理已存在）"
+              echo "ℹ️  Nginx 配置无需更新"
             fi
 
-            # ── 9. 重载 Nginx ─────────────────────────────────
             nginx -s reload
             echo "✅ Nginx 已重载"
 
-            # ── 10. 健康检查 ──────────────────────────────────
+            # ── 9. 健康检查 ───────────────────────────────────
+            sleep 3
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/health 2>/dev/null || echo "000")
             if [ "$HTTP_STATUS" = "200" ]; then
               echo "✅ 后端健康检查通过 (HTTP $HTTP_STATUS)"
             else
               echo "⚠️  后端健康检查: HTTP $HTTP_STATUS"
+              # 打印 PM2 日志辅助诊断
+              pm2 logs z1-docs-auth --lines 15 --nostream 2>&1 | tail -15
             fi
-
-            # ── 11. 替换旧后端目录 ─────────────────────────────
-            cd $DEPLOY_DIR
-            rm -rf server
-            mv server_new server
-            echo "✅ 后端目录已更新"
 
             echo ""
             echo "════════════════════════════════════════════"
