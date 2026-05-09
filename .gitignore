@@ -32,4 +32,7 @@ auth-users.js
 
 # Claude Code settings
 .claude/
-node_modules/
+
+# npm cache directories
+.npm-cache/
+server/.npm-cache/

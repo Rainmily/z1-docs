@@ -29,19 +29,19 @@ export default defineConfig({
 
       // 保护区域：以下路径需要登录才能访问
       protectedPaths: [
-        '/z1/',         // Z1 操作手册（全部）
-        '/product/',    // 产品功能（可选）
+        '/product/',    // 产品功能
+        '/z1/',         // Z1 操作手册
+        '/resources/',  // 资源中心
+        '/changelog/',  // 更新日志
       ],
 
-      // 公开路径：即使在 protectedPaths 内也不需要登录
+      // 公开路径：不需要登录即可访问
       publicPaths: [
-        '/',            // 首页
-        '/solution/',   // 解决方案
-        '/cases/',      // 成功案例
-        '/resources/',  // 资源中心
-        '/news/',       // 行业资讯
-        '/changelog/',  // 更新日志
-        '/auth/login',  // 登录页面
+        '/',              // 首页
+        '/solution/',     // 解决方案
+        '/cases/',        // 成功案例
+        '/news/',         // 行业资讯
+        '/auth/login',    // 登录页面
         '/auth/callback', // OAuth 回调页面
         '/auth/refresh-session', // 强制刷新 session
       ],
@@ -62,12 +62,12 @@ export default defineConfig({
     logoText: '掌上乾坤',
     nav: [
       { text: '官网', link: 'https://www.zsqk.com.cn/', target: '_blank' },
-      { text: '产品功能', link: '/product/' },
-      { text: 'Z1操作手册', link: '/z1/' },
       { text: '解决方案', link: '/solution/' },
       { text: '成功案例', link: '/cases/' },
-      { text: '资源中心', link: '/resources/' },
       { text: '行业资讯', link: '/news/' },
+      { text: '产品功能', link: '/product/' },
+      { text: 'Z1操作手册', link: '/z1/' },
+      { text: '资源中心', link: '/resources/' },
       { text: '更新日志', link: '/changelog/' },
     ],
     sidebar: {
@@ -120,11 +120,11 @@ export default defineConfig({
           text: '行业资讯',
           collapsed: false,
           items: [
-            { text: '行业资讯', link: '/resources/industry-news/' },
-            { text: '2026年04月30日', link: '/resources/industry-news/2026-04-30-industry-news' },
-            { text: '2026年05月07日', link: '/resources/industry-news/2026-05-07-industry-news' },
-            { text: '2026年05月08日', link: '/resources/industry-news/2026-05-08-industry-news' },
-            { text: '2026年05月09日', link: '/resources/industry-news/2026-05-09-industry-news' },
+            { text: '行业资讯', link: '/news/' },
+            { text: '2026年04月30日', link: '/news/2026-04-30-industry-news' },
+            { text: '2026年05月07日', link: '/news/2026-05-07-industry-news' },
+            { text: '2026年05月08日', link: '/news/2026-05-08-industry-news' },
+            { text: '2026年05月09日', link: '/news/2026-05-09-industry-news' },
           ],
         },
       ],

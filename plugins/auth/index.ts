@@ -8,11 +8,6 @@
  */
 
 import type { RspressPlugin } from '@rspress/shared';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export interface WeComAuthPluginOptions {
   /** 是否启用权限控制，默认 true */
@@ -47,14 +42,8 @@ export function pluginAuth(options: WeComAuthPluginOptions = {}): RspressPlugin 
     trustedDomain = 'https://docs.whohi.cn',
   } = options;
 
-  // AuthGuard 组件路径
-  const authGuardPath = path.resolve(__dirname, 'AuthGuard.tsx');
-
   return {
     name: 'plugin-auth',
-
-    // 注入全局守卫组件
-    globalUIComponents: [authGuardPath],
 
     // 向客户端运行时注入配置（直接写 script 标签，确保在 React 加载前就执行）
     builderConfig: {
