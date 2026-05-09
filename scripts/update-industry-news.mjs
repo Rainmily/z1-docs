@@ -173,36 +173,72 @@ function generateMarkdown(news, dateStr) {
   return markdown;
 }
 
-async function updateIndex() {
-  const indexPath = path.join(ROOT_DIR, 'docs/resources/index.mdx');
-  const newsDir = path.join(ROOT_DIR, 'docs/resources/industry-news');
-
+// 更新 docs/news/index.mdx 的文章列表
+function updateNewsIndex(newsFilePath) {
+  const indexPath = path.join(ROOT_DIR, 'docs/news/index.mdx');
   if (!fs.existsSync(indexPath)) return;
 
-  let content = fs.readFileSync(indexPath, 'utf-8');
-  const files = fs.readdirSync(newsDir)
-    .filter(f => f.endsWith('.md'))
-    .sort()
-    .reverse();
-
-  if (files.length === 0) return;
-
-  const latestFile = files[0];
-  const linkPath = `/resources/industry-news/${latestFile.replace('.md', '')}`;
-  const dateMatch = latestFile.match(/(\d{4}-\d{2}-\d{2})/);
+  const dateMatch = newsFilePath.match(/(\d{4}-\d{2}-\d{2})/);
   const dateStr = dateMatch ? `${dateMatch[1].split('-')[0]}年${dateMatch[1].split('-')[1]}月${dateMatch[1].split('-')[2]}日` : '';
+  const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
+  const fileName = path.basename(newsFilePath, '.mdx');
 
-  const newLink = `- [${dateStr}行业资讯简报](${linkPath}) - 最新手机行业动态汇总\n`;
+  let content = fs.readFileSync(indexPath, 'utf-8');
 
-  const newsSectionRegex = /## 行业资讯\n\n-\s*\[.*?\]\(.*?\)\s*-\s*.*?\n/;
-  if (newsSectionRegex.test(content)) {
-    content = content.replace(newsSectionRegex, newLink);
-  } else {
-    content = content.replace(/(## 技术支持)/, `${newLink}\n$1`);
+  // 生成新的链接行
+  const newLink = `- [${dateStr}行业资讯简报](${linkPath}) - 最新手机行业动态汇总`;
+
+  // 检查是否已存在该链接
+  if (content.includes(fileName)) {
+    console.log(`  ${dateStr} 文章已存在，跳过更新索引`);
+    return;
   }
 
-  fs.writeFileSync(indexPath, content);
-  console.log('索引已更新');
+  // 在 "## 最新简报" 后面插入新链接
+  const regex = /(## 最新简报\n\n)(- \[)/;
+  if (regex.test(content)) {
+    content = content.replace(regex, `$1${newLink}\n$2`);
+    fs.writeFileSync(indexPath, content);
+    console.log(`  索引已更新: ${dateStr}`);
+  }
+}
+
+// 更新 rspress.config.ts 的 sidebar 配置
+function updateSidebar(newsFilePath) {
+  const configPath = path.join(ROOT_DIR, 'rspress.config.ts');
+  if (!fs.existsSync(configPath)) return;
+
+  const dateMatch = newsFilePath.match(/(\d{4}-\d{2}-\d{2})/);
+  const dateStr = dateMatch ? `${dateMatch[1].split('-')[0]}年${dateMatch[1].split('-')[1]}月${dateMatch[1].split('-')[2]}日` : '';
+  const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
+  const fileName = path.basename(newsFilePath, '.mdx');
+
+  let content = fs.readFileSync(configPath, 'utf-8');
+
+  // 检查是否已存在该链接
+  if (content.includes(fileName)) {
+    console.log(`  ${dateStr} sidebar 已存在，跳过更新`);
+    return;
+  }
+
+  // 生成新的 sidebar 条目
+  const newItem = `{ text: '${dateStr}', link: '${linkPath}' }`;
+
+  // 在 '/news/': 的 sidebar 配置中查找并插入
+  // 匹配 '/news/' 的 sidebar 配置块
+  const newsSidebarRegex = /(\/news\/': \[\s*\{[^}]*text: '行业资讯'[^}]*\n[^}]*items: \[)([^]]*)(\]\s*,)/;
+
+  if (newsSidebarRegex.test(content)) {
+    content = content.replace(newsSidebarRegex, (match, prefix, items, suffix) => {
+      // 在 items 数组中添加新条目（插入在第一个位置之后）
+      const newItems = `${newItem},\n            ${items.trim()}`;
+      return `${prefix}\n            ${newItems}\n          ${suffix}`;
+    });
+    fs.writeFileSync(configPath, content);
+    console.log(`  Sidebar 已更新: ${dateStr}`);
+  } else {
+    console.log(`  未找到 /news/ sidebar 配置，跳过`);
+  }
 }
 
 function gitPush() {
@@ -232,7 +268,7 @@ async function main() {
 
   const today = new Date();
   const dateStr = today.toISOString().split('T')[0];
-  const newsDir = path.join(ROOT_DIR, 'docs/resources/industry-news');
+  const newsDir = path.join(ROOT_DIR, 'docs/news');
 
   if (!fs.existsSync(newsDir)) {
     fs.mkdirSync(newsDir, { recursive: true });
@@ -246,11 +282,16 @@ async function main() {
   }
 
   const markdown = generateMarkdown(news, dateStr);
-  const filePath = path.join(newsDir, `${dateStr}-industry-news.md`);
+  const fileName = `${dateStr}-industry-news.mdx`;
+  const filePath = path.join(newsDir, fileName);
   fs.writeFileSync(filePath, markdown);
   console.log(`文章已保存: ${filePath}`);
 
-  await updateIndex();
+  // 更新索引和 sidebar
+  console.log('更新配置文件...');
+  updateNewsIndex(fileName);
+  updateSidebar(fileName);
+
   gitPush();
 
   console.log('='.repeat(50));
