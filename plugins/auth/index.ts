@@ -40,11 +40,11 @@ export interface WeComAuthPluginOptions {
 export function pluginAuth(options: WeComAuthPluginOptions = {}): RspressPlugin {
   const {
     enabled = true,
-    apiBase = 'http://localhost:3001',
+    apiBase = '/auth-api',
     protectedPaths = [],
     publicPaths = [],
     showUserBadge = true,
-    trustedDomain = 'http://localhost:3001',
+    trustedDomain = 'https://docs.whohi.cn',
   } = options;
 
   // AuthGuard 组件路径
@@ -56,52 +56,64 @@ export function pluginAuth(options: WeComAuthPluginOptions = {}): RspressPlugin 
     // 注入全局守卫组件
     globalUIComponents: [authGuardPath],
 
-    // 向客户端运行时注入配置
-    addRuntimeModules() {
-      return {
-        // 虚拟模块：在客户端初始化时设置 window.__ZSQK_AUTH_CONFIG__
-        'virtual-auth-init': `
-          (function() {
-            window.__ZSQK_AUTH_CONFIG__ = {
-              enabled: ${JSON.stringify(enabled)},
-              apiBase: ${JSON.stringify(apiBase)},
-              protectedPaths: ${JSON.stringify(protectedPaths)},
-              publicPaths: ${JSON.stringify(publicPaths)},
-              showUserBadge: ${JSON.stringify(showUserBadge)},
-              trustedDomain: ${JSON.stringify(trustedDomain)},
-            };
-          })();
-        `,
-      };
-    },
-
-    // 扩展构建配置 - 直接注入脚本到 HTML
+    // 向客户端运行时注入配置（直接写 script 标签，确保在 React 加载前就执行）
     builderConfig: {
-      source: {
-        define: {
-          // 环境变量（供前端使用）
-          __AUTH_API_BASE__: JSON.stringify(apiBase),
-        },
-      },
+      source: {},
       html: {
         tags: [
           {
             tag: 'script',
             attrs: { 'data-inline': true },
             children: `
-              window.__ZSQK_AUTH_CONFIG__ = {
-                enabled: ${JSON.stringify(enabled)},
-                apiBase: ${JSON.stringify(apiBase)},
-                protectedPaths: ${JSON.stringify(protectedPaths)},
-                publicPaths: ${JSON.stringify(publicPaths)},
-                showUserBadge: ${JSON.stringify(showUserBadge)},
-                trustedDomain: ${JSON.stringify(trustedDomain)},
-              };
+window.__ZSQK_AUTH_CONFIG__ = {
+  enabled: ${JSON.stringify(enabled)},
+  apiBase: ${JSON.stringify(apiBase)},
+  protectedPaths: ${JSON.stringify(protectedPaths)},
+  publicPaths: ${JSON.stringify(publicPaths)},
+  showUserBadge: ${JSON.stringify(showUserBadge)},
+  trustedDomain: ${JSON.stringify(trustedDomain)},
+};
+// 企业微信 SDK postMessage 拦截：在 React 加载前就设置监听器
+(function() {
+  var orgAdd = window.addEventListener.bind(window);
+  var sdkReplied = false;
+  window.addEventListener('message', function(e) {
+    var d = e.data;
+    if (typeof d !== 'string') return;
+    if (d === 'ask_usePostMessage' && !sdkReplied) {
+      sdkReplied = true;
+      // 稍等 iframe 加载完成后再发回复
+      var iframe = document.getElementById('wecom-login-container');
+      if (iframe) {
+        var child = iframe.querySelector('iframe');
+        if (child && child.contentWindow) {
+          child.contentWindow.postMessage('usePostMessage', '*');
+          return;
+        }
+      }
+      // iframe 还没创建，等一下
+      var tries = 0;
+      var interval = setInterval(function() {
+        tries++;
+        var cont = document.getElementById('wecom-login-container');
+        var frm = cont ? cont.querySelector('iframe') : null;
+        if (frm && frm.contentWindow) {
+          clearInterval(interval);
+          frm.contentWindow.postMessage('usePostMessage', '*');
+        } else if (tries > 50) {
+          clearInterval(interval);
+        }
+      }, 100);
+    }
+  });
+})();
             `,
           },
         ],
       },
     },
+
+
   };
 }
 

@@ -4,9 +4,43 @@
  * 核心改动：
  * - 每个企业有独立的 corpId + agentId + agentSecret
  * - 所有 API 调用都动态使用对应企业的凭证
+ * - 企业微信认证类 API 返回 GBK 编码，通讯录 API 返回 UTF-8 编码
  */
 
 import axios from 'axios';
+import iconv from 'iconv-lite';
+
+// ── axios 封装（智能选择编码）──────────────────────────────────
+// 企业微信认证类接口（gettoken, getlogininfo, getuserinfo 等）：返回 GBK
+// 企业微信通讯录接口（user/get 等）：返回 UTF-8
+// 通过判断 URL 路径来决定编码
+function wecomFetch(url, params) {
+  return axios.get(url, {
+    params,
+    responseType: 'arraybuffer',
+    timeout: 10000,
+  }).then(res => {
+    const buf = Buffer.from(res.data);
+    // 通讯录相关接口使用 UTF-8，其他用 GBK
+    const encoding = url.includes('/cgi-bin/user/') ? 'utf-8' : 'gbk';
+    const str = iconv.decode(buf, encoding);
+    return JSON.parse(str);
+  });
+}
+
+function wecomPost(url, data, params) {
+  return axios.post(url, data, {
+    params,
+    responseType: 'arraybuffer',
+    timeout: 10000,
+  }).then(res => {
+    const buf = Buffer.from(res.data);
+    // 通讯录相关接口使用 UTF-8，其他用 GBK
+    const encoding = url.includes('/cgi-bin/user/') ? 'utf-8' : 'gbk';
+    const str = iconv.decode(buf, encoding);
+    return JSON.parse(str);
+  });
+}
 
 // ── 多企业配置（从环境变量加载）───────────────────────────────
 function loadMultiWecomConfig() {
@@ -105,8 +139,7 @@ async function getAccessToken(companyId) {
 
   const url = 'https://qyapi.weixin.qq.com/cgi-bin/gettoken';
   const params = { corpid: config.corpId, corpsecret: config.agentSecret };
-  const response = await axios.get(url, { params });
-  const data = response.data;
+  const data = await wecomFetch(url, params);
 
   if (data.errcode !== 0) {
     throw new WeComAuthError(
@@ -171,8 +204,7 @@ async function getLoginInfo(companyId, code) {
   const url = 'https://qyapi.weixin.qq.com/cgi-bin/auth/getlogininfo';
   const params = { access_token: accessToken };
 
-  const response = await axios.post(url, { auth_code: code }, { params });
-  const data = response.data;
+  const data = await wecomPost(url, { auth_code: code }, params);
 
   if (data.errcode !== 0) {
     throw new WeComAuthError(
@@ -195,8 +227,7 @@ async function getUserIdByCode(companyId, code) {
   const url = 'https://qyapi.weixin.qq.com/cgi-bin/user/getuserinfo';
   const params = { access_token: accessToken, code };
 
-  const response = await axios.get(url, { params });
-  const data = response.data;
+  const data = await wecomFetch(url, params);
 
   if (data.errcode !== 0) {
     throw new WeComAuthError(
@@ -216,8 +247,7 @@ async function getUserDetailByTicket(companyId, userTicket) {
   const url = 'https://qyapi.weixin.qq.com/cgi-bin/auth/getuserinfo3rd';
   const params = { access_token: accessToken };
 
-  const response = await axios.post(url, { user_ticket: userTicket }, { params });
-  const data = response.data;
+  const data = await wecomPost(url, { user_ticket: userTicket }, params);
 
   if (data.errcode !== 0) {
     throw new WeComAuthError(
@@ -227,6 +257,27 @@ async function getUserDetailByTicket(companyId, userTicket) {
   }
 
   return data;
+}
+
+/**
+ * 通过 userid 查询成员详情（通讯录接口，需要"查看通讯录"权限）
+ */
+export async function getUserById(companyId, userId) {
+  const accessToken = await getAccessToken(companyId);
+  const url = 'https://qyapi.weixin.qq.com/cgi-bin/user/get';
+  const params = { access_token: accessToken, userid: userId };
+
+  console.log('[getUserById] userId:', userId, '| token prefix:', accessToken.substring(0, 10));
+  const data = await wecomFetch(url, params);
+  console.log('[getUserById] errcode:', data.errcode, '| name:', data.name, '| userid:', data.userid);
+
+  if (data.errcode !== 0) {
+    // 无权限或其他错误，返回 null 不中断流程
+    console.log('[getUserById] 失败, errmsg:', data.errmsg);
+    return null;
+  }
+
+  return data; // { errcode, errmsg, userid, name, department, position, ... }
 }
 
 /**
@@ -251,8 +302,10 @@ function checkAllowedUsers(companyId, userId) {
  */
 export async function completeQrLogin(companyId, code) {
   const config = resolveConfig(companyId);
-  const loginInfo = await getLoginInfo(companyId, code);
-  const { UserId, user_ticket } = loginInfo;
+  // PC 扫码 SDK 的 code 通过 getUserIdByCode 获取 userid
+  const info = await getUserIdByCode(companyId, code);
+  console.log('[completeQrLogin] getUserIdByCode result:', JSON.stringify(info));
+  const { UserId, user_ticket } = info;
 
   if (!checkAllowedUsers(companyId, UserId)) {
     throw new WeComAuthError(
@@ -261,21 +314,22 @@ export async function completeQrLogin(companyId, code) {
     );
   }
 
+  // 通过通讯录查询获取真实姓名
   let userInfo = { userid: UserId, name: UserId };
-  if (user_ticket) {
-    try {
-      const detail = await getUserDetailByTicket(companyId, user_ticket);
-      userInfo = {
-        userid: detail.UserId,
-        name: detail.name,
-        avatar: detail.avatar,
-        department: detail.department?.[0]?.join(','),
-        position: detail.position,
-      };
-    } catch {
-      // user_ticket 失效时降级到 userid
+  try {
+    const contactInfo = await getUserById(companyId, UserId);
+    console.log('[completeQrLogin] getUserById contactInfo:', JSON.stringify(contactInfo));
+    if (contactInfo && contactInfo.name) {
+      userInfo.name = contactInfo.name;
+      if (contactInfo.avatar) userInfo.avatar = contactInfo.avatar;
+    } else {
+      console.log('[completeQrLogin] ⚠️ getUserById 返回空或无 name，降级为 userid');
     }
+  } catch (e) {
+    console.log('[completeQrLogin] ❌ getUserById 抛出异常:', e.message);
+    // 通讯录查询失败，降级到 userid
   }
+  console.log('[completeQrLogin] 最终 userInfo.name:', userInfo.name);
 
   return {
     ...userInfo,
@@ -291,9 +345,12 @@ export async function completeQrLogin(companyId, code) {
  * @param {string} code - OAuth 授权码
  */
 export async function completeOAuthLogin(companyId, code) {
+  console.log('[completeOAuthLogin] START companyId:', companyId, 'code:', code ? code.substring(0,20)+'...' : 'empty');
   const config = resolveConfig(companyId);
+  // 使用 getUserIdByCode（OAuth 标准接口，支持 SDK 和移动端登录）
   const info = await getUserIdByCode(companyId, code);
-  const { UserId } = info;
+  console.log('[completeOAuthLogin] getUserIdByCode result:', JSON.stringify(info));
+  const { UserId, user_ticket } = info;
 
   if (!UserId) {
     throw new WeComAuthError(
@@ -309,19 +366,22 @@ export async function completeOAuthLogin(companyId, code) {
     );
   }
 
+  // 通过通讯录查询获取真实姓名
   let userInfo = { userid: UserId, name: UserId };
-  if (info.user_ticket) {
-    try {
-      const detail = await getUserDetailByTicket(companyId, info.user_ticket);
-      userInfo = {
-        userid: detail.UserId,
-        name: detail.name,
-        avatar: detail.avatar,
-      };
-    } catch {
-      // ignore
+  try {
+    const contactInfo = await getUserById(companyId, UserId);
+    console.log('[completeOAuthLogin] getUserById contactInfo:', JSON.stringify(contactInfo));
+    if (contactInfo && contactInfo.name) {
+      userInfo.name = contactInfo.name;
+      if (contactInfo.avatar) userInfo.avatar = contactInfo.avatar;
+    } else {
+      console.log('[completeOAuthLogin] ⚠️ getUserById 返回空或无 name，降级为 userid');
     }
+  } catch (e) {
+    console.log('[completeOAuthLogin] ❌ getUserById 抛出异常:', e.message, e.stack);
+    // 通讯录查询失败，降级到 userid
   }
+  console.log('[completeOAuthLogin] 最终 userInfo.name:', userInfo.name);
 
   return {
     ...userInfo,

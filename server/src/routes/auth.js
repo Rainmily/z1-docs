@@ -27,9 +27,6 @@ const SERVER_URL = process.env.SERVER_URL || `http://localhost:${process.env.POR
 
 const SESSION_KEY = 'wecom_user';
 
-// ── State 格式约定 ─────────────────────────────────────────────
-// state = base64(JSON.stringify({ companyId, type, random }))
-// 示例: {"companyId":"zsqk","type":"qr","random":"abc123"}
 function encodeState(companyId, type) {
   const raw = JSON.stringify({
     companyId,
@@ -55,10 +52,6 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// ════════════════════════════════════════════════════════════════
-// 端点 1：获取可用企业列表
-// 前端登录页调用，展示企业选择列表
-// ════════════════════════════════════════════════════════════════
 router.get('/companies', (req, res) => {
   const companies = getAllCompanies();
   const multiTenant = isMultiTenantMode();
@@ -66,15 +59,10 @@ router.get('/companies', (req, res) => {
   res.json({
     multiTenant,
     companies,
-    // 单企业模式下也返回（方便前端统一处理）
     defaultCompany: multiTenant ? null : companies[0] || null,
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// 端点 2：获取扫码登录 URL（PC端）
-// query 参数: companyId（企业ID）
-// ════════════════════════════════════════════════════════════════
 router.get('/qr-url', (req, res) => {
   const { companyId } = req.query;
 
@@ -83,13 +71,11 @@ router.get('/qr-url', (req, res) => {
   }
 
   try {
-    // 验证企业 ID 有效
     getWecomConfig(companyId);
 
     const state = encodeState(companyId, 'qr');
     req.session.oauthState = state;
 
-    // 回调到后端，后端处理完成后重定向到前端
     const callbackUrl = `${SERVER_URL}/auth/callback`;
     const url = buildQrConnectUrl(companyId, callbackUrl, state);
 
@@ -99,10 +85,6 @@ router.get('/qr-url', (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════
-// 端点 3：获取移动端 OAuth 授权链接
-// query 参数: companyId（企业ID）
-// ════════════════════════════════════════════════════════════════
 router.get('/oauth-url', (req, res) => {
   const { companyId } = req.query;
 
@@ -125,16 +107,10 @@ router.get('/oauth-url', (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════
-// 端点 4：企业微信回调（核心）
-// PC扫码 + 移动端OAuth 都回调这里
-// 从 state 中解析出 companyId，用对应企业的凭证完成登录
-// ════════════════════════════════════════════════════════════════
 router.get('/callback', async (req, res) => {
   const { code, state, auth_code } = req.query;
 
   try {
-    // 1. 解析 state（包含 companyId + 登录类型）
     if (!state) {
       throw new Error('缺少 state 参数');
     }
@@ -146,33 +122,34 @@ router.get('/callback', async (req, res) => {
 
     const { companyId, type } = stateData;
 
-    // 2. 用对应企业的凭证完成登录
     let userInfo;
+    console.log('[Callback] type:', type, '| code:', code ? code.substring(0,20)+'...' : 'none', '| auth_code:', auth_code ? 'yes' : 'none');
     if (type === 'oauth' && code) {
+      console.log('[Callback] 使用 completeOAuthLogin');
       userInfo = await completeOAuthLogin(companyId, code);
     } else if (auth_code) {
+      console.log('[Callback] 使用 completeQrLogin (auth_code)');
       userInfo = await completeQrLogin(companyId, auth_code);
     } else if (code) {
+      console.log('[Callback] 使用 completeQrLogin (code)');
       userInfo = await completeQrLogin(companyId, code);
     } else {
       throw new Error('未获取到授权码（用户可能取消了授权）');
     }
+    console.log('[Callback] userInfo.name:', userInfo.name, '| userid:', userInfo.userid);
 
-    // 3. 写入 Session
     req.session[SESSION_KEY] = {
       ...userInfo,
       loginTime: Date.now(),
       loginType: type,
     };
 
-    // 4. 生成前端 token
     const sessionToken = Buffer.from(JSON.stringify({
       ...userInfo,
       loginTime: Date.now(),
       expires: Date.now() + 8 * 60 * 60 * 1000,
     })).toString('base64');
 
-    // 5. 重定向到前端首页（AuthGuard 会处理 URL 中的 token 参数）
     const redirectUrl = new URL(`${FRONTEND_URL}/`);
     redirectUrl.searchParams.set('auth_token', sessionToken);
     res.redirect(redirectUrl.toString());
@@ -180,16 +157,12 @@ router.get('/callback', async (req, res) => {
   } catch (err) {
     console.error('[Callback Error]', err.message);
 
-    // 重定向到首页并带上错误信息
     const errorUrl = new URL(`${FRONTEND_URL}/`);
     errorUrl.searchParams.set('auth_error', err.message);
     res.redirect(errorUrl.toString());
   }
 });
 
-// ════════════════════════════════════════════════════════════════
-// 端点 5：查询登录状态
-// ════════════════════════════════════════════════════════════════
 router.get('/status', (req, res) => {
   const user = req.session[SESSION_KEY];
   if (user) {
@@ -209,9 +182,6 @@ router.get('/status', (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════
-// 端点 6：退出登录
-// ════════════════════════════════════════════════════════════════
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) return res.status(500).json({ error: '退出失败' });
@@ -219,9 +189,6 @@ router.post('/logout', (req, res) => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// 端点 7：验证 Token
-// ════════════════════════════════════════════════════════════════
 router.post('/verify', (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: '缺少 token' });
@@ -247,19 +214,15 @@ router.post('/verify', (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════════
-// 端点 8：企业微信 SDK 登录（code 换 token）
-// 前端 SDK 登录成功后调用此接口
-// ════════════════════════════════════════════════════════════════
 router.post('/code-login', async (req, res) => {
   const { code, companyId } = req.body;
+  console.log('[code-login] 收到请求, code:', code ? code.substring(0,15)+'...' : '无', '| companyId:', companyId);
 
   if (!code) {
+    console.log('[code-login] ❌ 缺少 code 参数');
     return res.status(400).json({ error: '缺少 code 参数' });
   }
 
-  // 如果没有指定 companyId，尝试从 state 中解析（SDK 登录时传递的 state）
-  // 但 SDK 的 state 格式与 OAuth 不同，这里简化处理：如果没传 companyId，尝试使用第一个企业
   let resolvedCompanyId = companyId;
   if (!resolvedCompanyId) {
     const companies = getAllCompanies();
@@ -267,30 +230,28 @@ router.post('/code-login', async (req, res) => {
       resolvedCompanyId = companies[0].id;
     }
   }
+  console.log('[code-login] 使用 companyId:', resolvedCompanyId);
 
   try {
-    // 使用 OAuth 流程完成登录（与 completeOAuthLogin 相同）
     const userInfo = await completeOAuthLogin(resolvedCompanyId, code);
 
-    // 写入 Session
     req.session[SESSION_KEY] = {
       ...userInfo,
       loginTime: Date.now(),
       loginType: 'sdk',
     };
 
-    // 生成前端 token
     const sessionToken = Buffer.from(JSON.stringify({
       ...userInfo,
       loginTime: Date.now(),
       expires: Date.now() + 8 * 60 * 60 * 1000,
     })).toString('base64');
 
-    res.json({ token: sessionToken, user: userInfo });
+    console.log('[code-login] ✅ 成功, userInfo.name:', userInfo.name, '| userid:', userInfo.userid);
+    res.json({ token: sessionToken, user: userInfo, _debug: { name: userInfo.name, userid: userInfo.userid } });
   } catch (err) {
     console.error('[CodeLogin Error]', err.message);
     res.status(401).json({ error: err.message });
   }
 });
-
 export default router;

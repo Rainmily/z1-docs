@@ -18,8 +18,17 @@ const __dirname = dirname(__filename);
 // 加载环境变量
 try {
   const { config } = await import('dotenv');
-  config({ path: join(__dirname, '../.env') });
-} catch { /* 生产环境用环境变量注入 */ }
+  const envPath = join(__dirname, '../.env');
+  console.log('[BOOT] CWD:', process.cwd(), '| __dirname:', __dirname, '| envPath:', envPath);
+  const result = config({ path: envPath });
+  if (result.error) {
+    console.error('[BOOT] dotenv error:', result.error.message);
+  } else {
+    console.log('[BOOT] dotenv OK, MULTI_WECOM_CONFIG:', process.env.MULTI_WECOM_CONFIG ? 'SET (' + process.env.MULTI_WECOM_CONFIG.substring(0, 40) + '...)' : 'NOT SET');
+  }
+} catch (e) {
+  console.error('[BOOT] dotenv import failed:', e.message);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +36,10 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-secret-multi-tenant';
 
 // ── 中间件 ────────────────────────────────────────────────────
+// 关键：nginx 反向代理下，Express 收到 HTTP 请求，但原始请求是 HTTPS
+// 必须启用 trust proxy，否则 express-session 的 secure: true 无法设置 cookie
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

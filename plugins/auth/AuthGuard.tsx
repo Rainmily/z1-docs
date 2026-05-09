@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import WeComLogin from './WeComLogin';
+import { safeAtob } from './base64Utf8';
 
 interface AuthConfig {
   enabled: boolean;
@@ -191,7 +191,7 @@ export default function AuthGuard({
 
     if (token) {
       try {
-        const decoded: SessionUser = JSON.parse(decodeURIComponent(atob(token)));
+        const decoded: SessionUser = JSON.parse(safeAtob(token));
         if (Date.now() <= decoded.expires) {
           localStorage.setItem('zsqk_wecom_session', JSON.stringify(decoded));
           setSession(decoded);
