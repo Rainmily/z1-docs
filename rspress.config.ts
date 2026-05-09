@@ -6,6 +6,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 生产用 /auth-api（nginx 已代理到 Express）；本地开发用 localhost:3001
+const apiBase = process.env.AUTH_API_BASE || '/auth-api';
+
 export default defineConfig({
   root: 'docs',
   themeDir: path.join(__dirname, 'theme'),
@@ -21,10 +24,8 @@ export default defineConfig({
       // enabled: true, // 设为 false 可临时关闭权限控制
       enabled: true,
 
-      // 后端认证服务地址
-      // 开发环境用 http://localhost:3001（需先运行 node mock-server.js）
-      // 生产环境用 https://docs.whohi.cn/auth-api
-      apiBase: 'http://localhost:3001',
+      // 认证服务地址（通过环境变量 AUTH_API_BASE 覆盖，默认开发用 localhost:3001）
+      ...(process.env.AUTH_API_BASE ? { apiBase: process.env.AUTH_API_BASE } : {}),
 
       // 保护区域：以下路径需要登录才能访问
       protectedPaths: [
@@ -37,11 +38,12 @@ export default defineConfig({
         '/',            // 首页
         '/solution/',   // 解决方案
         '/cases/',      // 成功案例
-        '/industry-news/', // 行业资讯
-        '/about/',      // 更新日志
         '/resources/',  // 资源中心
+        '/news/',       // 行业资讯
+        '/changelog/',  // 更新日志
         '/auth/login',  // 登录页面
         '/auth/callback', // OAuth 回调页面
+        '/auth/refresh-session', // 强制刷新 session
       ],
 
       // 右上角显示已登录用户徽章
@@ -52,11 +54,7 @@ export default defineConfig({
     }),
   ],
   themeConfig: {
-    sidebar: {
-      '/industry-news/': {
-        useAutoSidebar: true,
-      },
-    },
+
     logo: {
       image: '/logo.jpg',
       text: '掌上乾坤',
@@ -69,8 +67,8 @@ export default defineConfig({
       { text: '解决方案', link: '/solution/' },
       { text: '成功案例', link: '/cases/' },
       { text: '资源中心', link: '/resources/' },
-      { text: '行业资讯', link: '/industry-news/' },
-      { text: '更新日志', link: '/about/' },
+      { text: '行业资讯', link: '/news/' },
+      { text: '更新日志', link: '/changelog/' },
     ],
     sidebar: {
       '/product/': [
@@ -117,25 +115,23 @@ export default defineConfig({
           ],
         },
       ],
-      '/industry-news/': [
+      '/news/': [
         {
           text: '行业资讯',
           collapsed: false,
           items: [
-            { text: '行业资讯', link: '/industry-news/' },
-            { text: '📰 每日新闻', link: '/industry-news/daily' },
-            { text: '📁 历史存档', link: '/industry-news/20260505-2100' },
-            { text: '2026发展趋势', link: '/industry-news/2026-trends' },
-            { text: '客户转化率提升', link: '/industry-news/customer-conversion' },
-            { text: '数字化转型', link: '/industry-news/digital-transformation' },
+            { text: '行业资讯', link: '/news/' },
+            { text: '2026年04月30日', link: '/news/2026-04-30-industry-news' },
+            { text: '2026年05月07日', link: '/news/2026-05-07-industry-news' },
+            { text: '2026年05月08日', link: '/news/2026-05-08-industry-news' },
           ],
         },
       ],
-      '/about/': [
+      '/changelog/': [
         {
           text: '更新日志',
           items: [
-            { text: '更新日志', link: '/about/changelog' },
+            { text: '更新日志', link: '/changelog/' },
           ],
         },
       ],
@@ -211,6 +207,7 @@ export default defineConfig({
             { text: '卡券转赠', link: '/z1/marketing-guide/coupon-gift' },
             { text: '自定义商城活动页', link: '/z1/marketing-guide/custom-page' },
             { text: '门店客流统计', link: '/z1/marketing-guide/foot-traffic' },
+            { text: '短信通知', link: '/z1/marketing-guide/sms-notification' },
             { text: '签码管理', link: '/z1/marketing-guide/qrcode' },
           ],
         },
@@ -237,9 +234,9 @@ export default defineConfig({
         {
           text: '系统设置',
           items: [
-            { text: '销售设置', link: '/z1/operations/sales-settings' },
-            { text: '首页配置', link: '/z1/operations/homepage' },
-            { text: '权限包设计', link: '/z1/operations/permission' },
+            { text: '权限包', link: '/z1/operations/permission-package' },
+            { text: '职员登录记录', link: '/z1/operations/login-record' },
+            { text: '用户名密码登录', link: '/z1/operations/password-login' },
           ],
         },
         {
@@ -292,14 +289,7 @@ export default defineConfig({
             { text: '序列号管理', link: '/z1/operations/operator-serial' },
           ],
         },
-        {
-          text: '鉴权模块',
-          items: [
-            { text: '权限包', link: '/z1/operations/permission-package' },
-            { text: '职员登录记录', link: '/z1/operations/login-record' },
-            { text: '用户名密码登录', link: '/z1/operations/password-login' },
-          ],
-        },
+
         {
           text: '通知中心',
           items: [
