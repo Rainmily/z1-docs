@@ -67,8 +67,55 @@ async function searchNews() {
   return allNews.slice(0, 20);
 }
 
+// 从新闻标题中提取关键信息生成总结标题
+function generateSummaryTitle(news) {
+  const brands = ['华为', '小米', '苹果', 'iPhone', 'OPPO', 'vivo', '荣耀', '一加', '三星', '高通', '联发科', '紫光'];
+  const actions = ['发布', '上市', '开售', '涨价', '突破', '合作', '达成', '推出'];
+  const topics = ['旗舰', 'AI', '芯片', '折叠屏', '影像', '屏幕', '电池', '技术'];
+
+  // 统计出现频率
+  const brandCount = {};
+  const topicCount = {};
+
+  news.slice(0, 10).forEach(item => {
+    brands.forEach(b => {
+      if (item.title.includes(b)) {
+        brandCount[b] = (brandCount[b] || 0) + 1;
+      }
+    });
+    topics.forEach(t => {
+      if (item.title.includes(t)) {
+        topicCount[t] = (topicCount[t] || 0) + 1;
+      }
+    });
+  });
+
+  // 获取最高频的品牌和主题
+  const topBrand = Object.entries(brandCount).sort((a, b) => b[1] - a[1])[0];
+  const topTopic = Object.entries(topicCount).sort((a, b) => b[1] - a[1])[0];
+
+  // 获取最新日期
+  const latestDate = news[0]?.pubDate ? new Date(news[0].pubDate) : new Date();
+  const dateStr = `${latestDate.getMonth() + 1}月${latestDate.getDate()}日`;
+
+  // 生成标题
+  let title = '';
+  if (topBrand && topBrand[1] >= 2) {
+    title = `${topBrand[0]}动态速递（${dateStr}）`;
+  } else if (topTopic && topTopic[1] >= 2) {
+    title = `${topTopic[0]}技术前沿（${dateStr}）`;
+  } else {
+    title = `手机行业日报（${dateStr}）`;
+  }
+
+  return title;
+}
+
 function generateMarkdown(news, dateStr) {
   const todayFormatted = `${dateStr.split('-')[0]}年${dateStr.split('-')[1]}月${dateStr.split('-')[2]}日`;
+
+  // 生成总结标题
+  const summaryTitle = generateSummaryTitle(news);
 
   let sections = {
     '行业动态': [],
@@ -141,7 +188,7 @@ function generateMarkdown(news, dateStr) {
     }
   });
 
-  let markdown = `# 手机行业资讯简报（${todayFormatted}）
+  let markdown = `# ${summaryTitle}
 
 本报告汇总最新手机行业动态，涵盖行业动态、新品发布、技术趋势与市场分析四大板块。
 
@@ -161,20 +208,34 @@ function generateMarkdown(news, dateStr) {
     }
   }
 
+  // 生成总结
+  const summary = [];
+  if (sections['新品发布'].length > 0) {
+    summary.push(`${sections['新品发布'].length}款新机发布`);
+  }
+  if (sections['技术趋势'].length > 0) {
+    summary.push(`${sections['技术趋势'].length}项技术突破`);
+  }
+  if (sections['市场分析'].length > 0) {
+    summary.push(`${sections['市场分析'].length}条市场动态`);
+  }
+  if (sections['行业动态'].length > 0) {
+    summary.push(`${sections['行业动态'].length}条行业资讯`);
+  }
+
   markdown += `## 总结\n\n`;
   markdown += `**${todayFormatted}** 手机行业核心态势：\n\n`;
-  markdown += `1. **市场动态**：手机行业持续演进，各品牌竞争激烈\n`;
-  markdown += `2. **新品密集**：各大厂商纷纷推出旗舰新品\n`;
-  markdown += `3. **技术创新**：AI、芯片、折叠屏等技术持续突破\n`;
-  markdown += `4. **行业趋势**：高端化与技术创新成为主旋律\n\n`;
-  markdown += `---\n\n`;
+  summary.forEach((s, idx) => {
+    markdown += `${idx + 1}. **${s}**\n`;
+  });
+  markdown += `\n---\n\n`;
   markdown += `*本报告基于公开信息整理，由定时任务自动生成 | ${new Date().toLocaleString('zh-CN')}*\n`;
 
-  return markdown;
+  return { markdown, summaryTitle };
 }
 
 // 更新 docs/news/index.mdx 的文章列表
-function updateNewsIndex(newsFilePath) {
+function updateNewsIndex(newsFilePath, summaryTitle) {
   const indexPath = path.join(ROOT_DIR, 'docs/news/index.mdx');
   if (!fs.existsSync(indexPath)) return;
 
@@ -185,12 +246,12 @@ function updateNewsIndex(newsFilePath) {
 
   let content = fs.readFileSync(indexPath, 'utf-8');
 
-  // 生成新的链接行
-  const newLink = `- [${dateStr}行业资讯简报](${linkPath}) - 最新手机行业动态汇总`;
+  // 生成新的链接行，使用总结标题
+  const newLink = `- [${summaryTitle}](${linkPath}) - ${dateStr}`;
 
   // 检查是否已存在该链接
   if (content.includes(fileName)) {
-    console.log(`  ${dateStr} 文章已存在，跳过更新索引`);
+    console.log(`  ${summaryTitle} 文章已存在，跳过更新索引`);
     return;
   }
 
@@ -199,17 +260,15 @@ function updateNewsIndex(newsFilePath) {
   if (regex.test(content)) {
     content = content.replace(regex, `$1${newLink}\n$2`);
     fs.writeFileSync(indexPath, content);
-    console.log(`  索引已更新: ${dateStr}`);
+    console.log(`  索引已更新: ${summaryTitle}`);
   }
 }
 
 // 更新 rspress.config.ts 的 sidebar 配置
-function updateSidebar(newsFilePath) {
+function updateSidebar(newsFilePath, summaryTitle) {
   const configPath = path.join(ROOT_DIR, 'rspress.config.ts');
   if (!fs.existsSync(configPath)) return;
 
-  const dateMatch = newsFilePath.match(/(\d{4}-\d{2}-\d{2})/);
-  const dateStr = dateMatch ? `${dateMatch[1].split('-')[0]}年${dateMatch[1].split('-')[1]}月${dateMatch[1].split('-')[2]}日` : '';
   const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
   const fileName = path.basename(newsFilePath, '.mdx');
 
@@ -217,15 +276,14 @@ function updateSidebar(newsFilePath) {
 
   // 检查是否已存在该链接
   if (content.includes(fileName)) {
-    console.log(`  ${dateStr} sidebar 已存在，跳过更新`);
+    console.log(`  ${summaryTitle} sidebar 已存在，跳过更新`);
     return;
   }
 
   // 生成新的 sidebar 条目
-  const newItem = `{ text: '${dateStr}', link: '${linkPath}' }`;
+  const newItem = `{ text: '${summaryTitle}', link: '${linkPath}' }`;
 
   // 在 '/news/': 的 sidebar 配置中查找并插入
-  // 匹配 '/news/' 的 sidebar 配置块
   const newsSidebarRegex = /(\/news\/': \[\s*\{[^}]*text: '行业资讯'[^}]*\n[^}]*items: \[)([^]]*)(\]\s*,)/;
 
   if (newsSidebarRegex.test(content)) {
@@ -235,7 +293,7 @@ function updateSidebar(newsFilePath) {
       return `${prefix}\n            ${newItems}\n          ${suffix}`;
     });
     fs.writeFileSync(configPath, content);
-    console.log(`  Sidebar 已更新: ${dateStr}`);
+    console.log(`  Sidebar 已更新: ${summaryTitle}`);
   } else {
     console.log(`  未找到 /news/ sidebar 配置，跳过`);
   }
@@ -281,16 +339,17 @@ async function main() {
     process.exit(1);
   }
 
-  const markdown = generateMarkdown(news, dateStr);
+  const { markdown, summaryTitle } = generateMarkdown(news, dateStr);
   const fileName = `${dateStr}-industry-news.mdx`;
   const filePath = path.join(newsDir, fileName);
   fs.writeFileSync(filePath, markdown);
   console.log(`文章已保存: ${filePath}`);
+  console.log(`文章标题: ${summaryTitle}`);
 
   // 更新索引和 sidebar
   console.log('更新配置文件...');
-  updateNewsIndex(fileName);
-  updateSidebar(fileName);
+  updateNewsIndex(fileName, summaryTitle);
+  updateSidebar(fileName, summaryTitle);
 
   gitPush();
 
