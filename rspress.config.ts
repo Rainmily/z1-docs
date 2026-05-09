@@ -55,6 +55,11 @@ export default defineConfig({
   ],
   themeConfig: {
 
+    // 禁用登录页面侧边栏
+    sidebar: {
+      '/auth/login': false,
+    },
+
     logo: {
       image: '/logo.jpg',
       text: '掌上乾坤',

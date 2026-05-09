@@ -304,33 +304,37 @@ export default function WeComLoginFinal({ apiBase }: { apiBase: string }) {
     <div
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', padding: '20px',
+        width: '100%', height: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        position: 'relative',
       }}
     >
+      {/* 返回链接 */}
+      <a
+        href="/"
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          color: '#fff',
+          textDecoration: 'none',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+        }}
+      >
+        ← 返回首页
+      </a>
+
       <div
         style={{
           background: '#fff', borderRadius: '16px', padding: '40px 36px', width: '100%',
-          maxWidth: '400px', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)', textAlign: 'center',
+          maxWidth: '500px', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)', textAlign: 'center',
         }}
       >
-        {/* 企业 Logo */}
-        <div
-          style={{
-            width: '64px', height: '64px', background: 'linear-gradient(135deg, #1aad19, #07c160)',
-            borderRadius: '16px', margin: '0 auto 20px', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: '32px',
-          }}
-        >
-          {company?.logo ? (
-            <img src={company.logo} alt={company.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '16px' }} />
-          ) : (
-            company?.name?.charAt(0) || '企'
-          )}
-        </div>
-
         <h2 style={{ margin: '0 0 6px', fontSize: '22px', color: '#1a1a1a', fontWeight: 600 }}>
-          {company?.name || '企业微信登录'}
+          企业微信登录
         </h2>
         <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#888' }}>
           请使用企业微信扫码登录
