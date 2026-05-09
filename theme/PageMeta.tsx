@@ -7,9 +7,16 @@ import React from 'react';
 import { usePageData } from '@rspress/core/runtime';
 
 export function PageMeta(): JSX.Element | null {
-  const pageData = usePageData();
-  const { frontmatter } = pageData;
+  let pageData: { frontmatter?: Record<string, unknown> } = {};
+  try {
+    const result = usePageData();
+    pageData = result?.page ?? {};
+  } catch {
+    // usePageData 在某些上下文下不可用，静默降级
+    return null;
+  }
 
+  const frontmatter = pageData?.frontmatter ?? {};
   const date = frontmatter['date'];
   const author = frontmatter['author'];
 
@@ -21,7 +28,7 @@ export function PageMeta(): JSX.Element | null {
   let displayDate = '';
   if (date) {
     try {
-      const d = new Date(date);
+      const d = new Date(date as string);
       if (!isNaN(d.getTime())) {
         displayDate = d.toLocaleDateString('zh-CN', {
           year: 'numeric',
@@ -59,7 +66,7 @@ export function PageMeta(): JSX.Element | null {
       {author && (
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span>✍️</span>
-          <span>{author}</span>
+          <span>{String(author)}</span>
         </span>
       )}
     </div>
