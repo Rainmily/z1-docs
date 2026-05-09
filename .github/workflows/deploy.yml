@@ -32,21 +32,7 @@ jobs:
       - name: Build Rspress site
         run: npm run build
 
-      # ── 3. 打包构建产物 ──────────────────────────────────────
-      - name: Package build artifacts
-        env:
-          COPYFILE_DISABLE: '1'
-        run: |
-          tar -czf doc_build.tar.gz -C doc_build .
-          tar -czf server.tar.gz \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            --exclude='doc_build' \
-            --exclude='.npm-cache' \
-            --exclude='doc_build.tar.gz' \
-            -C server .
-
-      # ── 4. 部署到服务器 ─────────────────────────────────────
+      # ── 3. 直接 SCP 上传构建产物（避免 tarball 打包/解压问题）──
       - name: Deploy to server via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -54,11 +40,11 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "doc_build.tar.gz,server.tar.gz"
+          source: "doc_build,server"
           target: "/www/wwwroot/z1-docs/"
           strip_components: 0
 
-      # ── 5. 服务器端：解压 + 重启服务 ─────────────────────────
+      # ── 4. 服务器端：更新配置 + 重启服务 ─────────────────────────
       - name: Deploy & restart services on server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -72,38 +58,31 @@ jobs:
             DEPLOY_DIR="/www/wwwroot/z1-docs"
             NGINX_CONF="/www/server/nginx/conf/vhost/docs.whohi.cn.conf"
 
-            # ── 1. 先解压后端 tarball 到临时目录，避免污染根目录 ──
-            cd $DEPLOY_DIR
-            rm -rf server_new
-            mkdir server_new
-            tar -xzf server.tar.gz -C server_new
-            rm server.tar.gz
-            echo "✅ 后端服务已解压到 server_new/"
-
-            # ── 2. 解压前端（不会受后端影响）────────────────────
-            rm -rf doc_build
-            tar -xzf doc_build.tar.gz
-            rm doc_build.tar.gz
-            find . -name '._*' -delete 2>/dev/null || true
-            chown -R lighthouse:lighthouse .
-            # 验证 doc_build 完整性
-            if [ ! -d "doc_build/static/js" ]; then
-              echo "❌ doc_build/static/js 不存在，打包失败！"
-              ls -la doc_build/ 2>/dev/null || echo "doc_build 目录为空或不存在"
+            # ── 1. 验证 SCP 上传的目录完整性 ────────────────────
+            if [ ! -d "$DEPLOY_DIR/doc_build/static/js" ]; then
+              echo "❌ doc_build/static/js 不存在，SCP 上传失败！"
+              ls -la "$DEPLOY_DIR/doc_build/" 2>/dev/null || echo "doc_build 不存在"
               exit 1
             fi
-            echo "✅ 前端静态站点已解压"
+            echo "✅ 前端静态文件完整 (doc_build/)"
 
-            # ── 3. 创建 .env（base64 解码写入，避免 YAML/heredoc 引号问题）──
-            echo 'UE9SVD0zMDAxCkZST05URU5EX1VSTD1odHRwczovL2RvY3Mud2hvaGkuY24KU0VSVkVSX1VSTD1odHRwczovL2RvY3Mud2hvaGkuY24vYXV0aC1hcGkKTk9ERV9FTlY9cHJvZHVjdGlvbgpNVUxUSV9XRUNPTV9DT05GSUc9W3siaWQiOiJ6c3FrIiwibmFtZSI6IuaOjOS4iuS5vuWdpCIsImxvZ28iOiIiLCJjb3JwSWQiOiJ3dzAwY2M0YzEyZmY0OWFlODYiLCJhZ2VudElkIjoiMTAwMDAzMCIsImFnZW50U2VjcmV0IjoiMTNOTUdacTdjLWdHWE4wamlhaVBsTFhZME5GM3VvdDdXN3U4VG0zRDg5MCIsImFsbG93ZWRVc2VycyI6IiJ9XQpTRVNTSU9OX1NFQ1JFVD0wNTA2M2VlNTNkODM1MzVmZDViYmNjNzdjMjZjNzg5NzcxMzZkOTkyMTU0NGQ5NzBiYTM4OTFkZDkzNDczNjMzCg==' | base64 -d > "$DEPLOY_DIR/server_new/.env"
-            echo "✅ .env 配置文件已创建 ✓"
+            if [ ! -f "$DEPLOY_DIR/server/src/index.js" ]; then
+              echo "❌ server/src/index.js 不存在，SCP 上传失败！"
+              ls "$DEPLOY_DIR/server/" 2>/dev/null || echo "server 不存在"
+              exit 1
+            fi
+            echo "✅ 后端服务文件完整 (server/)"
 
-            # ── 4. 安装后端依赖 ────────────────────────────────
-            cd $DEPLOY_DIR/server_new
+            # ── 2. 创建 .env（base64 解码写入 .env 文件）─────────────
+            echo 'UE9SVD0zMDAxCkZST05URU5EX1VSTD1odHRwczovL2RvY3Mud2hvaGkuY24KU0VSVkVSX1VSTD1odHRwczovL2RvY3Mud2hvaGkuY24vYXV0aC1hcGkKTk9ERV9FTlY9cHJvZHVjdGlvbgpNVUxUSV9XRUNPTV9DT05GSUc9W3siaWQiOiJ6c3FrIiwibmFtZSI6IuaOjOS4iuS5vuWdpCIsImxvZ28iOiIiLCJjb3JwSWQiOiJ3dzAwY2M0YzEyZmY0OWFlODYiLCJhZ2VudElkIjoiMTAwMDAzMCIsImFnZW50U2VjcmV0IjoiMTNOTUdacTdjLWdHWE4wamlhaVBsTFhZME5GM3VvdDdXN3U4VG0zRDg5MCIsImFsbG93ZWRVc2VycyI6IiJ9XQpTRVNTSU9OX1NFQ1JFVD0wNTA2M2VlNTNkODM1MzVmZDViYmNjNzdjMjZjNzg5NzcxMzZkOTkyMTU0NGQ5NzBiYTM4OTFkZDkzNDczNjMzCg==' | base64 -d > "$DEPLOY_DIR/server/.env"
+            echo "✅ .env 配置文件已写入"
+
+            # ── 3. 安装后端依赖 ────────────────────────────────
+            cd "$DEPLOY_DIR/server"
             npm install --production
             echo "✅ 后端依赖已安装"
 
-            # ── 5. 清理旧进程 ──────────────────────────────
+            # ── 4. 清理旧 PM2 进程（杀掉占端口的残留进程）───────────
             OLD_PID=$(lsof -ti:3001 2>/dev/null) || true
             if [ -n "$OLD_PID" ]; then
               echo "杀掉旧进程 PID=$OLD_PID"
@@ -113,39 +92,28 @@ jobs:
             pm2 delete z1-docs-auth 2>/dev/null || true
             echo "✅ 旧进程已清理"
 
-            # ── 6. 原子替换 server 目录 ──────────────────────
-            cd $DEPLOY_DIR
-            rm -rf server_old 2>/dev/null || true
-            [ -d server ] && mv server server_old || true
-            mv server_new server
-            echo "✅ server_new → server（目录已替换）"
-
-            # ── 7. 启动新服务 ──────────────────────────────
-            cd $DEPLOY_DIR/server
+            # ── 5. 启动后端服务 ──────────────────────────────
             export NODE_ENV=production
             export PORT=3001
             pm2 start src/index.js \
               --name z1-docs-auth \
-              --cwd $DEPLOY_DIR/server \
+              --cwd "$DEPLOY_DIR/server" \
               --interpreter node
             pm2 save
             echo "✅ 后端服务已启动"
 
-            # ── 8. 更新 Nginx 配置 ────────────────────────────
-            if ! grep -q "location /auth-api" $NGINX_CONF; then
-              AUTH_PROXY_BLOCK="    # 企业微信认证 API 反向代理\n    location /auth-api/ {\n        proxy_pass http://127.0.0.1:3001/;\n        proxy_http_version 1.1;\n        proxy_set_header Host \$host;\n        proxy_set_header X-Real-IP \$remote_addr;\n        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto \$scheme;\n    }"
-              sed -i "/location \//i\\$AUTH_PROXY_BLOCK" $NGINX_CONF
+            # ── 6. 更新 Nginx 配置（如需要）───────────────────────
+            if ! grep -q "location /auth-api" "$NGINX_CONF"; then
+              sed -i '/location \//i\    # 企业微信认证 API 反向代理\n    location /auth-api/ {\n        proxy_pass http://127.0.0.1:3001/;\n        proxy_http_version 1.1;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n    }' "$NGINX_CONF"
               echo "✅ Nginx 配置已更新"
             else
               echo "ℹ️  Nginx 配置无需更新"
             fi
-
             nginx -s reload
             echo "✅ Nginx 已重载"
 
-            # ── 9. 健康检查 ───────────────────────────────────
+            # ── 7. 健康检查 ───────────────────────────────────
             sleep 3
-            # 后端检查
             BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/health 2>/dev/null || echo "000")
             if [ "$BACKEND_STATUS" = "200" ]; then
               echo "✅ 后端健康检查通过 (HTTP $BACKEND_STATUS)"
@@ -153,8 +121,7 @@ jobs:
               echo "⚠️  后端健康检查: HTTP $BACKEND_STATUS"
               pm2 logs z1-docs-auth --lines 15 --nostream 2>&1 | tail -15
             fi
-            # 前端 doc_build 静态文件检查
-            if [ -f "doc_build/index.html" ] && [ -d "doc_build/static" ]; then
+            if [ -f "$DEPLOY_DIR/doc_build/index.html" ] && [ -d "$DEPLOY_DIR/doc_build/static" ]; then
               echo "✅ 前端静态文件完整 (doc_build/)"
             else
               echo "❌ 前端静态文件缺失！"
