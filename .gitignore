@@ -32,3 +32,4 @@ auth-users.js
 
 # Claude Code settings
 .claude/
+node_modules/
