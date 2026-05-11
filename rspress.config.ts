@@ -126,6 +126,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: '行业资讯', link: '/news/' },
+            { text: '小米动态速递（5月11日）', link: '/news/2026-05-11-0800-industry-news' },
             { text: '新机密集发布周：华为/小米/iQOO/荣耀同台竞技（5月10日）', link: '/news/2026-05-10-industry-news' },
             { text: '字节跳动2000亿AI投入：阔折叠新机密集曝光（5月9日）', link: '/news/2026-05-09-industry-news' },
             { text: '苹果AI生态爆发：iOS 27 Siri重构+可穿戴设备（5月8日）', link: '/news/2026-05-08-industry-news' },

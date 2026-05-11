@@ -112,7 +112,10 @@ function generateSummaryTitle(news) {
 }
 
 function generateMarkdown(news, dateStr) {
-  const todayFormatted = `${dateStr.split('-')[0]}年${dateStr.split('-')[1]}月${dateStr.split('-')[2]}日`;
+  // dateStr 格式: "YYYY-MM-DD HH:MM" 或 "YYYY-MM-DD"
+  const [datePart] = dateStr.split(' ');
+  const [year, month, day] = datePart.split('-');
+  const todayFormatted = `${year}年${month}月${day}日`;
 
   // 生成总结标题
   const summaryTitle = generateSummaryTitle(news);
@@ -242,16 +245,17 @@ function updateNewsIndex(newsFilePath, summaryTitle) {
   const dateMatch = newsFilePath.match(/(\d{4}-\d{2}-\d{2})/);
   const dateStr = dateMatch ? `${dateMatch[1].split('-')[0]}年${dateMatch[1].split('-')[1]}月${dateMatch[1].split('-')[2]}日` : '';
   const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
-  const fileName = path.basename(newsFilePath, '.mdx');
+  // 按日期前缀去重，同一天多次运行只保留第一篇
+  const datePrefix = dateMatch ? dateMatch[1] : '';
 
   let content = fs.readFileSync(indexPath, 'utf-8');
 
   // 生成新的链接行，使用总结标题
   const newLink = `- [${summaryTitle}](${linkPath}) - ${dateStr}`;
 
-  // 检查是否已存在该链接
-  if (content.includes(fileName)) {
-    console.log(`  ${summaryTitle} 文章已存在，跳过更新索引`);
+  // 检查同一天是否已有文章（同一天只保留第一篇，避免重复）
+  if (datePrefix && content.includes(datePrefix)) {
+    console.log(`  ${summaryTitle} 当日已有文章，跳过更新索引`);
     return;
   }
 
@@ -270,34 +274,42 @@ function updateSidebar(newsFilePath, summaryTitle) {
   if (!fs.existsSync(configPath)) return;
 
   const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
-  const fileName = path.basename(newsFilePath, '.mdx');
+  // 按日期前缀去重，同一天多次运行只保留第一篇
+  const dateMatch = newsFilePath.match(/(\d{4}-\d{2}-\d{2})/);
+  const datePrefix = dateMatch ? dateMatch[1] : '';
 
   let content = fs.readFileSync(configPath, 'utf-8');
 
-  // 检查是否已存在该链接
-  if (content.includes(fileName)) {
-    console.log(`  ${summaryTitle} sidebar 已存在，跳过更新`);
+  // 检查同一天是否已有 sidebar 条目
+  if (datePrefix && content.includes(datePrefix)) {
+    console.log(`  ${summaryTitle} 当日已有 sidebar 条目，跳过更新`);
     return;
   }
 
   // 生成新的 sidebar 条目
   const newItem = `{ text: '${summaryTitle}', link: '${linkPath}' }`;
 
-  // 找到 news sidebar items 数组的起始位置（在 '/news/': 之后），在第一个 }] 后插入新条目
+  // 限定在 news sidebar 区域内查找 marker（避免匹配到其他 sidebar 的同名项）
+  const newsSectionStart = content.indexOf("'/news/':");
+  const newsSectionEnd = content.indexOf("'/changelog/':");
+  const newsSection = content.slice(newsSectionStart, newsSectionEnd);
+
   const marker = `{ text: '行业资讯', link: '/news/' }`;
-  const markerIdx = content.indexOf(marker);
+  const markerIdx = newsSection.indexOf(marker);
   if (markerIdx === -1) {
     console.log(`  未找到 sidebar marker '${marker}'，跳过`);
     return;
   }
-  // 找到 marker 所在行的结束（下一个 },\n）
-  const lineEndIdx = content.indexOf('},\n', markerIdx);
-  if (lineEndIdx === -1) {
+  // 找到 marker 所在行的结束（该行以 },\n 结尾）
+  const markerLineEnd = newsSection.indexOf('},\n', markerIdx);
+  if (markerLineEnd === -1) {
     console.log(`  未找到 sidebar marker 结束符，跳过`);
     return;
   }
-  const insertIdx = lineEndIdx + 2; // 插入到 },\n 之后
-  content = content.slice(0, insertIdx) + `            ${newItem},\n` + content.slice(insertIdx);
+  // 插入到 marker 行结束之后
+  const absoluteMarkerIdx = newsSectionStart + markerIdx;
+  const absoluteInsertIdx = newsSectionStart + markerLineEnd + 2;
+  content = content.slice(0, absoluteInsertIdx) + `            ${newItem},\n` + content.slice(absoluteInsertIdx);
   fs.writeFileSync(configPath, content);
   console.log(`  Sidebar 已更新: ${summaryTitle}`);
 }
@@ -328,7 +340,11 @@ async function main() {
   console.log('='.repeat(50));
 
   const today = new Date();
-  const dateStr = today.toISOString().split('T')[0];
+  // 文件名精确到小时分钟，每小时生成一篇独立的文章
+  const pad = n => String(n).padStart(2, '0');
+  const datePrefix = today.toISOString().split('T')[0]; // YYYY-MM-DD
+  const hourMin = `${pad(today.getHours())}${pad(today.getMinutes())}`; // HHmm
+  const dateStr = `${datePrefix} ${pad(today.getHours())}:${pad(today.getMinutes())}`;
   const newsDir = path.join(ROOT_DIR, 'docs/news');
 
   if (!fs.existsSync(newsDir)) {
@@ -343,7 +359,7 @@ async function main() {
   }
 
   const { markdown, summaryTitle } = generateMarkdown(news, dateStr);
-  const fileName = `${dateStr}-industry-news.mdx`;
+  const fileName = `${datePrefix}-${hourMin}-industry-news.mdx`;
   const filePath = path.join(newsDir, fileName);
   fs.writeFileSync(filePath, markdown);
   console.log(`文章已保存: ${filePath}`);
