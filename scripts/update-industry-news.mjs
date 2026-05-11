@@ -283,20 +283,23 @@ function updateSidebar(newsFilePath, summaryTitle) {
   // 生成新的 sidebar 条目
   const newItem = `{ text: '${summaryTitle}', link: '${linkPath}' }`;
 
-  // 在 '/news/': 的 sidebar 配置中查找并插入
-  const newsSidebarRegex = /(\/news\/': \[\s*\{[^}]*text: '行业资讯'[^}]*\n[^}]*items: \[)([^]]*)(\]\s*,)/;
-
-  if (newsSidebarRegex.test(content)) {
-    content = content.replace(newsSidebarRegex, (match, prefix, items, suffix) => {
-      // 在 items 数组中添加新条目（插入在第一个位置之后）
-      const newItems = `${newItem},\n            ${items.trim()}`;
-      return `${prefix}\n            ${newItems}\n          ${suffix}`;
-    });
-    fs.writeFileSync(configPath, content);
-    console.log(`  Sidebar 已更新: ${summaryTitle}`);
-  } else {
-    console.log(`  未找到 /news/ sidebar 配置，跳过`);
+  // 找到 news sidebar items 数组的起始位置（在 '/news/': 之后），在第一个 }] 后插入新条目
+  const marker = `{ text: '行业资讯', link: '/news/' }`;
+  const markerIdx = content.indexOf(marker);
+  if (markerIdx === -1) {
+    console.log(`  未找到 sidebar marker '${marker}'，跳过`);
+    return;
   }
+  // 找到 marker 所在行的结束（下一个 },\n）
+  const lineEndIdx = content.indexOf('},\n', markerIdx);
+  if (lineEndIdx === -1) {
+    console.log(`  未找到 sidebar marker 结束符，跳过`);
+    return;
+  }
+  const insertIdx = lineEndIdx + 2; // 插入到 },\n 之后
+  content = content.slice(0, insertIdx) + `            ${newItem},\n` + content.slice(insertIdx);
+  fs.writeFileSync(configPath, content);
+  console.log(`  Sidebar 已更新: ${summaryTitle}`);
 }
 
 function gitPush() {
