@@ -124,18 +124,10 @@ export default defineConfig({
         {
           text: '行业资讯',
           collapsed: false,
-          i
+          items: [
             { text: '小米动态速递（5月11日）', link: '/news/2026-05-11-0800-industry-news' },
             { text: '小米动态速递（5月11日）', link: '/news/2026-05-11-0914-industry-news' },
             { text: '华为动态速递（5月10日）', link: '/news/2026-05-10-industry-news' },
-            { text: '字节跳动2000亿AI投入：阔折叠新机密集曝光（5月9日）', link: '/news/2026-05-09-industry-news' },
-            { text: '苹果AI生态爆发：iOS 27 Siri重构+可穿戴设备（5月8日）', link: '/news/2026-05-08-industry-news' },
-            { text: '谷歌苹果硬件交锋：Fitbit Air无屏手环+一加Nord CE6印度发布（5月7日）', link: '/news/2026-05-07-industry-news' },
-            { text: 'Q1全球手机出货量逆势增长1%：Omdia数据显示超预期（4月30日）', link: '/news/2026-04-30-industry-news' },
-          
-            { text: '行业资讯', link: '/news/' },
-            { text: '小米动态速递（5月11日）', link: '/news/2026-05-11-0800-industry-news' },
-            { text: '新机密集发布周：华为/小米/iQOO/荣耀同台竞技（5月10日）', link: '/news/2026-05-10-industry-news' },
             { text: '字节跳动2000亿AI投入：阔折叠新机密集曝光（5月9日）', link: '/news/2026-05-09-industry-news' },
             { text: '苹果AI生态爆发：iOS 27 Siri重构+可穿戴设备（5月8日）', link: '/news/2026-05-08-industry-news' },
             { text: '谷歌苹果硬件交锋：Fitbit Air无屏手环+一加Nord CE6印度发布（5月7日）', link: '/news/2026-05-07-industry-news' },

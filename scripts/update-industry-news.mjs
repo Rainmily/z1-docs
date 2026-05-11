@@ -155,8 +155,7 @@ function generateSidebar(articles) {
     `            { text: '${a.title.replace(/'/g, "\\'")}', link: '${a.linkPath}' }`
   ).join(',\n');
 
-  // 找到 news sidebar 的 items 区域，替换整个 items 数组
-  // 策略：找到 '/news/': 的位置，然后找到 collapsed: false 所在行，再找到 items: [ 之后的第一个 ]
+  // 找到 news sidebar 的 items: [...] 整个块，替换内容
   const newsSectionIdx = content.indexOf("'/news/':");
   const changelogSectionIdx = content.indexOf("'/changelog/':");
   if (newsSectionIdx === -1 || changelogSectionIdx === -1) {
@@ -173,8 +172,7 @@ function generateSidebar(articles) {
     return false;
   }
 
-  // items 区域从 items: [ 之后开始，找到对应的闭合 ]
-  // 在 TypeScript 中 items 数组可能有多行，需要找到与 [ 匹配的 ]
+  // 从 [ 之后开始，找到与之匹配的 ]
   const openBracket = sectionSlice.indexOf('[', itemsStartIdx);
   let depth = 1;
   let i = openBracket + 1;
@@ -188,14 +186,17 @@ function generateSidebar(articles) {
     return false;
   }
 
-  const itemsEndIdx = openBracket + 1; // 指向 ] 的位置
-  const newItemsBlock = newItems ? '\n' + newItems + ',\n          ' : '';
+  // items: [   ← itemsStartIdx
+  // ...content...   ← openBracket + 1 到 i - 1 (旧内容，不含 ])
+  // ]   ← i - 1 是 ] 的位置
 
-  // 在 content 中计算绝对位置
-  const absItemsStart = newsSectionIdx + itemsStartIdx;
-  const absItemsEnd = newsSectionIdx + itemsEndIdx;
+  // 替换: items: [ 之后到 ] 之前的内容
+  const absItemsOpen = newsSectionIdx + openBracket + 1; // 第一个 [ 之后的绝对位置
+  const absItemsClose = newsSectionIdx + i - 1;        // 最后一个 ] 的绝对位置
 
-  const newContent = content.slice(0, absItemsStart + 1) + newItemsBlock + content.slice(absItemsEnd);
+  const newBlock = newItems ? '\n' + newItems + ',\n          ' : '';
+  const newContent = content.slice(0, absItemsOpen) + newBlock + content.slice(absItemsClose);
+
   if (newContent === content) return false; // 无变化
 
   fs.writeFileSync(configPath, newContent, 'utf-8');
