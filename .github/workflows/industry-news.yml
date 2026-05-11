@@ -37,9 +37,8 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions"
           git fetch origin
-          git stash -k --include-untracked
+          git reset HEAD --quiet
           git pull --rebase origin master
-          git stash pop || true
           git add -A
           git diff --staged --quiet || git commit -m "chore: 更新手机行业资讯 $(date +'%Y-%m-%d %H:%M')"
           git push
