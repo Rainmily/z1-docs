@@ -2,312 +2,209 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
-import https from 'https';
-import { JSDOM } from 'jsdom';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-// RSS 订阅源
-const RSS_SOURCES = [
-  { name: 'IT之家', url: 'https://www.ithome.com/rss/' },
-  { name: '36氪', url: 'https://36kr.com/feed' },
-  { name: '虎嗅', url: 'https://www.huxiu.com/rss/0.xml' },
-];
+// ============================================================
+// frontmatter 解析
+// ============================================================
 
-// 关键词过滤
-const PHONE_KEYWORDS = ['手机', '华为', '小米', '苹果', 'OPPO', 'vivo', '荣耀', '一加', 'iPhone', 'Android', '芯片', '折叠屏', '5G', 'AI手机'];
+/**
+ * 解析 mdx 文件的 YAML frontmatter
+ * 返回 { title, date, author } 或 null
+ */
+function parseFrontmatter(content) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
+  if (!match) return null;
 
-function fetchUrl(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(data));
-    }).on('error', reject);
-  });
+  const fm = match[1];
+  const result = {};
+
+  // 提取 title / date / author（支持 title: 'xxx' 或 title: "xxx" 或 title: xxx）
+  const titleMatch = fm.match(/^title:\s*['"]?([^'"\r\n]+)['"]?/m);
+  if (titleMatch) result.title = titleMatch[1].trim();
+
+  const dateMatch = fm.match(/^date:\s*['"]?(\d{4}-\d{2}-\d{2})['"]?/m);
+  if (dateMatch) result.date = dateMatch[1];
+
+  const authorMatch = fm.match(/^author:\s*['"]?([^'"\r\n]+)['"]?/m);
+  if (authorMatch) result.author = authorMatch[1].trim();
+
+  return result;
 }
 
-async function fetchRSS(source) {
-  try {
-    console.log(`  - 获取 ${source.name}...`);
-    const xml = await fetchUrl(source.url);
-    const dom = new JSDOM(xml, { contentType: 'application/xml' });
-    const doc = dom.window.document;
-    const items = doc.querySelectorAll('item');
-
-    return Array.from(items).map(item => ({
-      title: item.querySelector('title')?.textContent?.trim() || '',
-      link: item.querySelector('link')?.textContent?.trim() || '',
-      description: item.querySelector('description')?.textContent?.trim() || item.querySelector('summary')?.textContent?.trim() || '',
-      pubDate: item.querySelector('pubDate')?.textContent?.trim() || '',
-      source: source.name,
-    })).filter(item => item.title && PHONE_KEYWORDS.some(kw => item.title.includes(kw) || item.description.includes(kw)));
-  } catch (error) {
-    console.error(`  - ${source.name} 获取失败: ${error.message}`);
-    return [];
-  }
+/**
+ * 从正文内容提取第一个 H1 标题作为 fallback
+ */
+function extractH1(content) {
+  const match = content.match(/^#\s+(.+)\r?\n/m);
+  return match ? match[1].trim() : null;
 }
 
-async function searchNews() {
-  console.log('开始获取 RSS 资讯...');
-  const allNews = [];
-
-  for (const source of RSS_SOURCES) {
-    const news = await fetchRSS(source);
-    allNews.push(...news);
-    await new Promise(r => setTimeout(r, 500)); // 避免请求过快
-  }
-
-  // 按日期排序
-  allNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-
-  console.log(`获取到 ${allNews.length} 条相关资讯`);
-  return allNews.slice(0, 20);
+/**
+ * 格式化日期字符串
+ * "2026-05-10" → "2026年05月10日"
+ */
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  return `${y}年${m}月${d}日`;
 }
 
-// 从新闻标题中提取关键信息生成总结标题
-function generateSummaryTitle(news) {
-  const brands = ['华为', '小米', '苹果', 'iPhone', 'OPPO', 'vivo', '荣耀', '一加', '三星', '高通', '联发科', '紫光'];
-  const actions = ['发布', '上市', '开售', '涨价', '突破', '合作', '达成', '推出'];
-  const topics = ['旗舰', 'AI', '芯片', '折叠屏', '影像', '屏幕', '电池', '技术'];
+// ============================================================
+// 扫描文章
+// ============================================================
 
-  // 统计出现频率
-  const brandCount = {};
-  const topicCount = {};
+/**
+ * 扫描 docs/news/ 下所有 mdx 文件，提取元信息并按日期排序
+ */
+function scanArticles() {
+  const newsDir = path.join(ROOT_DIR, 'docs/news');
+  if (!fs.existsSync(newsDir)) return [];
 
-  news.slice(0, 10).forEach(item => {
-    brands.forEach(b => {
-      if (item.title.includes(b)) {
-        brandCount[b] = (brandCount[b] || 0) + 1;
-      }
-    });
-    topics.forEach(t => {
-      if (item.title.includes(t)) {
-        topicCount[t] = (topicCount[t] || 0) + 1;
-      }
-    });
-  });
+  const files = fs.readdirSync(newsDir)
+    .filter(f => f.endsWith('.mdx') && f !== 'index.mdx');
 
-  // 获取最高频的品牌和主题
-  const topBrand = Object.entries(brandCount).sort((a, b) => b[1] - a[1])[0];
-  const topTopic = Object.entries(topicCount).sort((a, b) => b[1] - a[1])[0];
+  const articles = files.map(fileName => {
+    const filePath = path.join(newsDir, fileName);
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const fm = parseFrontmatter(content) || {};
+    const linkPath = `/news/${fileName.replace('.mdx', '')}`;
 
-  // 获取最新日期
-  const latestDate = news[0]?.pubDate ? new Date(news[0].pubDate) : new Date();
-  const dateStr = `${latestDate.getMonth() + 1}月${latestDate.getDate()}日`;
+    // title: frontmatter > H1 > 文件名
+    const title = fm.title || extractH1(content) || fileName.replace('.mdx', '');
 
-  // 生成标题
-  let title = '';
-  if (topBrand && topBrand[1] >= 2) {
-    title = `${topBrand[0]}动态速递（${dateStr}）`;
-  } else if (topTopic && topTopic[1] >= 2) {
-    title = `${topTopic[0]}技术前沿（${dateStr}）`;
-  } else {
-    title = `手机行业日报（${dateStr}）`;
-  }
-
-  return title;
-}
-
-function generateMarkdown(news, dateStr) {
-  // dateStr 格式: "YYYY-MM-DD HH:MM" 或 "YYYY-MM-DD"
-  const [datePart] = dateStr.split(' ');
-  const [year, month, day] = datePart.split('-');
-  const todayFormatted = `${year}年${month}月${day}日`;
-
-  // 生成总结标题
-  const summaryTitle = generateSummaryTitle(news);
-
-  let sections = {
-    '行业动态': [],
-    '新品发布': [],
-    '技术趋势': [],
-    '市场分析': [],
-  };
-
-  const industryKeywords = ['涨价', '成本', '供应链', '市场', '行业', '出货量', '下滑', '增长', '销量', '份额'];
-  const productKeywords = ['发布', '上市', '开售', '预售', '新品', '旗舰', '系列', '发布', '亮相'];
-  const techKeywords = ['AI', '芯片', '技术', '创新', '折叠', '屏幕', '电池', '摄像', '处理器', '系统'];
-  const marketKeywords = ['市场份额', '销量', '收入', '利润', '均价', '高端', '低端', '出货'];
-
-  const getSummary = (desc) => {
-    const text = desc.replace(/<[^>]+>/g, '').replace(/&[^;]+;/g, ' ').trim();
-    return text.slice(0, 150) + (text.length > 150 ? '...' : '');
-  };
-
-  const getDate = (pubDate) => {
-    try {
-      return new Date(pubDate).toISOString().split('T')[0];
-    } catch {
-      return dateStr;
+    // date: frontmatter > 文件名中的日期
+    let date = fm.date || '';
+    if (!date) {
+      const dateMatch = fileName.match(/(\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) date = dateMatch[1];
     }
-  };
 
-  news.forEach((item) => {
-    const title = item.title;
-    const content = getSummary(item.description);
-    const pubDate = getDate(item.pubDate);
-    const source = item.source;
-
-    let categorized = false;
-    for (const kw of marketKeywords) {
-      if (title.includes(kw)) {
-        sections['市场分析'].push({ title, content, source, pubDate });
-        categorized = true;
-        break;
-      }
-    }
-    if (!categorized) {
-      for (const kw of techKeywords) {
-        if (title.includes(kw)) {
-          sections['技术趋势'].push({ title, content, source, pubDate });
-          categorized = true;
-          break;
-        }
-      }
-    }
-    if (!categorized) {
-      for (const kw of productKeywords) {
-        if (title.includes(kw)) {
-          sections['新品发布'].push({ title, content, source, pubDate });
-          categorized = true;
-          break;
-        }
-      }
-    }
-    if (!categorized) {
-      for (const kw of industryKeywords) {
-        if (title.includes(kw)) {
-          sections['行业动态'].push({ title, content, source, pubDate });
-          categorized = true;
-          break;
-        }
-      }
-    }
-    if (!categorized) {
-      sections['行业动态'].push({ title, content, source, pubDate });
-    }
+    return {
+      fileName,
+      linkPath,
+      title,
+      date,
+      dateFormatted: formatDate(date),
+      author: fm.author || '',
+    };
   });
 
-  let markdown = `# ${summaryTitle}
-
-本报告汇总最新手机行业动态，涵盖行业动态、新品发布、技术趋势与市场分析四大板块。
-
----
-
-`;
-
-  for (const [sectionName, items] of Object.entries(sections)) {
-    if (items.length > 0) {
-      markdown += `## ${sectionName}\n\n`;
-      items.slice(0, 5).forEach((item, idx) => {
-        markdown += `### ${idx + 1}. ${item.title}\n\n`;
-        markdown += `${item.content}\n\n`;
-        markdown += `**来源**：${item.source} | **日期**：${item.pubDate}\n\n`;
-      });
-      markdown += `---\n\n`;
-    }
-  }
-
-  // 生成总结
-  const summary = [];
-  if (sections['新品发布'].length > 0) {
-    summary.push(`${sections['新品发布'].length}款新机发布`);
-  }
-  if (sections['技术趋势'].length > 0) {
-    summary.push(`${sections['技术趋势'].length}项技术突破`);
-  }
-  if (sections['市场分析'].length > 0) {
-    summary.push(`${sections['市场分析'].length}条市场动态`);
-  }
-  if (sections['行业动态'].length > 0) {
-    summary.push(`${sections['行业动态'].length}条行业资讯`);
-  }
-
-  markdown += `## 总结\n\n`;
-  markdown += `**${todayFormatted}** 手机行业核心态势：\n\n`;
-  summary.forEach((s, idx) => {
-    markdown += `${idx + 1}. **${s}**\n`;
+  // 按日期倒序，同日按文件名正序
+  articles.sort((a, b) => {
+    if (a.date !== b.date) return b.date.localeCompare(a.date);
+    return a.fileName.localeCompare(b.fileName);
   });
-  markdown += `\n---\n\n`;
-  markdown += `*本报告基于公开信息整理，由定时任务自动生成 | ${new Date().toLocaleString('zh-CN')}*\n`;
 
-  return { markdown, summaryTitle };
+  return articles;
 }
 
-// 更新 docs/news/index.mdx 的文章列表
-function updateNewsIndex(newsFilePath, summaryTitle) {
+// ============================================================
+// 生成 index.mdx
+// ============================================================
+
+function generateIndex(articles) {
   const indexPath = path.join(ROOT_DIR, 'docs/news/index.mdx');
-  if (!fs.existsSync(indexPath)) return;
 
-  const dateMatch = newsFilePath.match(/(\d{4}-\d{2}-\d{2})/);
-  const dateStr = dateMatch ? `${dateMatch[1].split('-')[0]}年${dateMatch[1].split('-')[1]}月${dateMatch[1].split('-')[2]}日` : '';
-  const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
+  const lines = [
+    '# 行业资讯',
+    '',
+    '手机行业最新动态、市场趋势和技术发展资讯。',
+    '',
+    '## 最新简报',
+    '',
+  ];
 
-  let content = fs.readFileSync(indexPath, 'utf-8');
-
-  // 生成新的链接行，使用总结标题
-  const newLink = `- [${summaryTitle}](${linkPath}) - ${dateStr}`;
-
-  // 按链接路径精确去重，避免同一篇文章重复插入
-  if (content.includes(linkPath)) {
-    console.log(`  ${summaryTitle} 已存在于索引，跳过`);
-    return;
+  if (articles.length === 0) {
+    lines.push('暂无文章。');
+  } else {
+    for (const article of articles) {
+      lines.push(`- [${article.title}](${article.linkPath}) - ${article.dateFormatted}`);
+    }
   }
 
-  // 在 "## 最新简报" 后面插入新链接
-  const regex = /(## 最新简报\n\n)(- \[)/;
-  if (regex.test(content)) {
-    content = content.replace(regex, `$1${newLink}\n$2`);
-    fs.writeFileSync(indexPath, content);
-    console.log(`  索引已更新: ${summaryTitle}`);
-  }
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push('*行业资讯由系统定期采集更新*');
+
+  const newContent = lines.join('\n') + '\n';
+  const oldContent = fs.existsSync(indexPath) ? fs.readFileSync(indexPath, 'utf-8') : '';
+
+  if (newContent === oldContent) return false; // 无变化
+
+  fs.writeFileSync(indexPath, newContent, 'utf-8');
+  return true;
 }
 
-// 更新 rspress.config.ts 的 sidebar 配置
-function updateSidebar(newsFilePath, summaryTitle) {
-  const configPath = path.join(ROOT_DIR, 'rspress.config.ts');
-  if (!fs.existsSync(configPath)) return;
+// ============================================================
+// 生成 sidebar（rspress.config.ts）
+// ============================================================
 
-  const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
+function generateSidebar(articles) {
+  const configPath = path.join(ROOT_DIR, 'rspress.config.ts');
+  if (!fs.existsSync(configPath)) return false;
 
   let content = fs.readFileSync(configPath, 'utf-8');
 
-  // 按链接路径精确去重，避免同一篇文章重复插入
-  if (content.includes(linkPath)) {
-    console.log(`  ${summaryTitle} 已存在于 sidebar，跳过`);
-    return;
+  // 生成新的 sidebar items
+  const newItems = articles.map(a =>
+    `            { text: '${a.title.replace(/'/g, "\\'")}', link: '${a.linkPath}' }`
+  ).join(',\n');
+
+  // 找到 news sidebar 的 items 区域，替换整个 items 数组
+  // 策略：找到 '/news/': 的位置，然后找到 collapsed: false 所在行，再找到 items: [ 之后的第一个 ]
+  const newsSectionIdx = content.indexOf("'/news/':");
+  const changelogSectionIdx = content.indexOf("'/changelog/':");
+  if (newsSectionIdx === -1 || changelogSectionIdx === -1) {
+    console.log('  未找到 news/changelog sidebar 区域，跳过');
+    return false;
   }
 
-  // 生成新的 sidebar 条目
-  const newItem = `{ text: '${summaryTitle}', link: '${linkPath}' }`;
+  const sectionSlice = content.slice(newsSectionIdx, changelogSectionIdx);
 
-  // 限定在 news sidebar 区域内查找 marker（避免匹配到其他 sidebar 的同名项）
-  const newsSectionStart = content.indexOf("'/news/':");
-  const newsSectionEnd = content.indexOf("'/changelog/':");
-  const newsSection = content.slice(newsSectionStart, newsSectionEnd);
+  // 找到 items: [ 的位置
+  const itemsStartIdx = sectionSlice.indexOf('items: [');
+  if (itemsStartIdx === -1) {
+    console.log('  未找到 items: [，跳过');
+    return false;
+  }
 
-  const marker = `{ text: '行业资讯', link: '/news/' }`;
-  const markerIdx = newsSection.indexOf(marker);
-  if (markerIdx === -1) {
-    console.log(`  未找到 sidebar marker '${marker}'，跳过`);
-    return;
+  // items 区域从 items: [ 之后开始，找到对应的闭合 ]
+  // 在 TypeScript 中 items 数组可能有多行，需要找到与 [ 匹配的 ]
+  const openBracket = sectionSlice.indexOf('[', itemsStartIdx);
+  let depth = 1;
+  let i = openBracket + 1;
+  while (i < sectionSlice.length && depth > 0) {
+    if (sectionSlice[i] === '[') depth++;
+    else if (sectionSlice[i] === ']') depth--;
+    i++;
   }
-  // 找到 marker 所在行的结束（该行以 },\n 结尾）
-  const markerLineEnd = newsSection.indexOf('},\n', markerIdx);
-  if (markerLineEnd === -1) {
-    console.log(`  未找到 sidebar marker 结束符，跳过`);
-    return;
+  if (depth !== 0) {
+    console.log('  items 数组解析失败，跳过');
+    return false;
   }
-  // 插入到 marker 行结束之后
-  const absoluteMarkerIdx = newsSectionStart + markerIdx;
-  const absoluteInsertIdx = newsSectionStart + markerLineEnd + 2;
-  content = content.slice(0, absoluteInsertIdx) + `            ${newItem},\n` + content.slice(absoluteInsertIdx);
-  fs.writeFileSync(configPath, content);
-  console.log(`  Sidebar 已更新: ${summaryTitle}`);
+
+  const itemsEndIdx = openBracket + 1; // 指向 ] 的位置
+  const newItemsBlock = newItems ? '\n' + newItems + ',\n          ' : '';
+
+  // 在 content 中计算绝对位置
+  const absItemsStart = newsSectionIdx + itemsStartIdx;
+  const absItemsEnd = newsSectionIdx + itemsEndIdx;
+
+  const newContent = content.slice(0, absItemsStart + 1) + newItemsBlock + content.slice(absItemsEnd);
+  if (newContent === content) return false; // 无变化
+
+  fs.writeFileSync(configPath, newContent, 'utf-8');
+  return true;
 }
+
+// ============================================================
+// git push
+// ============================================================
 
 function gitPush() {
   try {
@@ -315,7 +212,7 @@ function gitPush() {
     execSync('git add -A', { cwd: ROOT_DIR, stdio: 'inherit' });
     const status = execSync('git status --porcelain', { cwd: ROOT_DIR }).toString();
     if (status.trim()) {
-      execSync(`git commit -m "chore: 更新手机行业资讯 ${new Date().toLocaleString('zh-CN')}"`, {
+      execSync(`git commit -m "chore: 更新行业资讯索引 ${new Date().toLocaleString('zh-CN')}"`, {
         cwd: ROOT_DIR,
         stdio: 'inherit',
       });
@@ -329,47 +226,48 @@ function gitPush() {
   }
 }
 
-async function main() {
+// ============================================================
+// main
+// ============================================================
+
+function main() {
   console.log('='.repeat(50));
-  console.log('开始更新手机行业资讯...', new Date().toLocaleString('zh-CN'));
+  console.log('开始扫描行业资讯...', new Date().toLocaleString('zh-CN'));
   console.log('='.repeat(50));
 
-  const today = new Date();
-  // 文件名精确到小时分钟，每小时生成一篇独立的文章
-  const pad = n => String(n).padStart(2, '0');
-  const datePrefix = today.toISOString().split('T')[0]; // YYYY-MM-DD
-  const hourMin = `${pad(today.getHours())}${pad(today.getMinutes())}`; // HHmm
-  const dateStr = `${datePrefix} ${pad(today.getHours())}:${pad(today.getMinutes())}`;
-  const newsDir = path.join(ROOT_DIR, 'docs/news');
+  const articles = scanArticles();
+  console.log(`共扫描到 ${articles.length} 篇文章`);
 
-  if (!fs.existsSync(newsDir)) {
-    fs.mkdirSync(newsDir, { recursive: true });
+  if (articles.length === 0) {
+    console.log('没有文章，退出');
+    return;
   }
 
-  const news = await searchNews();
-
-  if (news.length === 0) {
-    console.error('未获取到资讯，退出');
-    process.exit(1);
+  // 打印前 5 篇
+  articles.slice(0, 5).forEach((a, i) => {
+    console.log(`  ${i + 1}. [${a.dateFormatted}] ${a.title}`);
+  });
+  if (articles.length > 5) {
+    console.log(`  ... 还有 ${articles.length - 5} 篇`);
   }
 
-  const { markdown, summaryTitle } = generateMarkdown(news, dateStr);
-  const fileName = `${datePrefix}-${hourMin}-industry-news.mdx`;
-  const filePath = path.join(newsDir, fileName);
-  fs.writeFileSync(filePath, markdown);
-  console.log(`文章已保存: ${filePath}`);
-  console.log(`文章标题: ${summaryTitle}`);
+  console.log('\n更新 index.mdx...');
+  const indexChanged = generateIndex(articles);
+  console.log(indexChanged ? '  index.mdx 已更新' : '  index.mdx 无变化');
 
-  // 更新索引和 sidebar
-  console.log('更新配置文件...');
-  updateNewsIndex(fileName, summaryTitle);
-  updateSidebar(fileName, summaryTitle);
+  console.log('更新 sidebar...');
+  const sidebarChanged = generateSidebar(articles);
+  console.log(sidebarChanged ? '  sidebar 已更新' : '  sidebar 无变化');
 
-  gitPush();
+  if (indexChanged || sidebarChanged) {
+    gitPush();
+  } else {
+    console.log('无变更，无需推送');
+  }
 
   console.log('='.repeat(50));
   console.log('更新完成!', new Date().toLocaleString('zh-CN'));
   console.log('='.repeat(50));
 }
 
-main().catch(console.error);
+main();
