@@ -245,17 +245,15 @@ function updateNewsIndex(newsFilePath, summaryTitle) {
   const dateMatch = newsFilePath.match(/(\d{4}-\d{2}-\d{2})/);
   const dateStr = dateMatch ? `${dateMatch[1].split('-')[0]}年${dateMatch[1].split('-')[1]}月${dateMatch[1].split('-')[2]}日` : '';
   const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
-  // 按日期前缀去重，同一天多次运行只保留第一篇
-  const datePrefix = dateMatch ? dateMatch[1] : '';
 
   let content = fs.readFileSync(indexPath, 'utf-8');
 
   // 生成新的链接行，使用总结标题
   const newLink = `- [${summaryTitle}](${linkPath}) - ${dateStr}`;
 
-  // 检查同一天是否已有文章（同一天只保留第一篇，避免重复）
-  if (datePrefix && content.includes(datePrefix)) {
-    console.log(`  ${summaryTitle} 当日已有文章，跳过更新索引`);
+  // 按链接路径精确去重，避免同一篇文章重复插入
+  if (content.includes(linkPath)) {
+    console.log(`  ${summaryTitle} 已存在于索引，跳过`);
     return;
   }
 
@@ -274,15 +272,12 @@ function updateSidebar(newsFilePath, summaryTitle) {
   if (!fs.existsSync(configPath)) return;
 
   const linkPath = `/news/${newsFilePath.replace('.mdx', '')}`;
-  // 按日期前缀去重，同一天多次运行只保留第一篇
-  const dateMatch = newsFilePath.match(/(\d{4}-\d{2}-\d{2})/);
-  const datePrefix = dateMatch ? dateMatch[1] : '';
 
   let content = fs.readFileSync(configPath, 'utf-8');
 
-  // 检查同一天是否已有 sidebar 条目
-  if (datePrefix && content.includes(datePrefix)) {
-    console.log(`  ${summaryTitle} 当日已有 sidebar 条目，跳过更新`);
+  // 按链接路径精确去重，避免同一篇文章重复插入
+  if (content.includes(linkPath)) {
+    console.log(`  ${summaryTitle} 已存在于 sidebar，跳过`);
     return;
   }
 
