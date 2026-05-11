@@ -125,7 +125,7 @@ export default defineConfig({
           text: '行业资讯',
           collapsed: false,
           items: [
-            { text: '小米动态速递（5月11日）', link: '/news/2026-05-11-0914-industry-news' },
+            { text: '小米动态速递（5月11日09:00）', link: '/news/2026-05-11-0914-industry-news' },
             { text: '华为动态速递（5月11日）', link: '/news/2026-05-11-industry-news' },
             { text: '华为动态速递（5月10日）', link: '/news/2026-05-10-industry-news' },
             { text: '字节跳动2000亿AI投入：阔折叠新机密集曝光（5月9日）', link: '/news/2026-05-09-industry-news' },
