@@ -46,6 +46,7 @@ jobs:
           source: "doc_build,server/src"
           target: "/www/wwwroot/z1-docs/"
           strip_components: 0
+          overwrite: true
 
       # ── 4. 服务器端：更新配置 + 重启服务 ─────────────────────────
       - name: Deploy & restart services on server
