@@ -125,6 +125,7 @@ export default defineConfig({
           text: '行业资讯',
           collapsed: false,
           items: [
+            { text: 'iPhone17激活破3000万、小米618让利16亿（5月23日上午）', link: '/news/daily-report-2026-05-23-am' },
             { text: '618价格战开打：华为苹果带头降价（5月23日）', link: '/news/daily-report-2026-05-23' },
             { text: '小米YU7 GT重磅发布38.99万（5月21日晚报）', link: '/news/daily-report-2026-05-21-pm' },
             { text: '小米YU7 GT今晚发布、英伟达Q1炸裂（5月21日）', link: '/news/daily-report-2026-05-21' },
@@ -140,7 +141,6 @@ export default defineConfig({
             { text: '小米动态速递（5月16日）', link: '/news/daily-report-2026-05-16' },
             { text: '小米动态速递（5月16日上午）', link: '/news/daily-report-2026-05-16-am' },
             { text: '小米动态速递（5月16日晚报）', link: '/news/daily-report-2026-05-16-pm' },
-            { text: '小米动态速递（5月15日）', link: '/news/daily-report-2026-05-15' },
           ],
         },
       ],
