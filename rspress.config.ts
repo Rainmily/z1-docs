@@ -126,6 +126,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'iPhone17系列激活破3000万、小米618让利16亿（5月23日上午）', link: '/news/daily-report-2026-05-23-am' },
+            { text: '苹果Q1首登全球出货榜首、iPhone18贴膜曝光（5月23日傍晚）', link: '/news/daily-report-2026-05-23-pm' },
             { text: '618价格战开打：华为苹果带头降价清场（5月23日）', link: '/news/daily-report-2026-05-23' },
             { text: '小米YU7 GT重磅发布38.99万、纽北最速SUV称王（5月21日）', link: '/news/daily-report-2026-05-21-pm' },
             { text: '小米动态速递（5月21日）', link: '/news/daily-report-2026-05-21' },
