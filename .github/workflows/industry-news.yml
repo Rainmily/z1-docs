@@ -2,8 +2,8 @@ name: 手机行业资讯更新
 
 on:
   schedule:
-    # 每小时运行一次
-    - cron: '0 * * * *'
+    # 每6小时运行一次（兜底机制，主要由 deploy workflow 负责即时更新）
+    - cron: '0 */6 * * *'
   workflow_dispatch:
     # 支持手动触发
 
