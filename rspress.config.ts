@@ -157,8 +157,6 @@ export default defineConfig({
           ],
         },
       ],
-        },
-      ],
       '/changelog/': [
         {
           text: '更新日志',
