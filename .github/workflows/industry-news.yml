@@ -7,6 +7,11 @@ on:
   workflow_dispatch:
     # 支持手动触发
 
+# 防止并发运行导致 git rebase 冲突
+concurrency:
+  group: industry-news
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -34,10 +39,23 @@ jobs:
 
       - name: 提交更新
         run: |
+          set -e  # 任何失败立即退出
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "GitHub Actions"
+
+          # 先 rebase 远程最新代码，冲突时退出而不是静默忽略
           git fetch origin
-          git pull --rebase origin master || true
-          git add -A
-          git diff --staged --quiet || git commit -m "chore: 更新手机行业资讯 $(date +'%Y-%m-%d %H:%M')"
-          git push
+          git rebase origin/master && {
+            # 无冲突才 add + diff
+            git add -A
+            if git diff --quiet; then
+              echo "没有变更，无需提交"
+            else
+              git commit -m "chore: 更新手机行业资讯 $(date +'%Y-%m-%d %H:%M')"
+              git push
+              echo "推送成功!"
+            fi
+          } || {
+            echo "⚠️  Rebase 冲突，终止本次更新（下次运行会重试）"
+            exit 1
+          }

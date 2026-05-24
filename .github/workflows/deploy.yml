@@ -7,7 +7,8 @@ on:
 
 concurrency:
   group: deploy
-  cancel-in-progress: false
+  # 新 commit 触发时取消旧 deploy，确保始终部署最新代码
+  cancel-in-progress: true
 
 jobs:
   deploy:

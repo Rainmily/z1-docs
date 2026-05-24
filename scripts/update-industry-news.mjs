@@ -155,13 +155,16 @@ function generateSidebar(articles) {
     `            { text: '${a.title.replace(/'/g, "\\'")}', link: '${a.linkPath}' }`
   ).join(',\n');
 
-  // 找到 news sidebar 的 items: [...] 整个块，替换内容
-  const newsSectionIdx = content.indexOf("'/news/':");
-  const changelogSectionIdx = content.indexOf("'/changelog/':");
-  if (newsSectionIdx === -1 || changelogSectionIdx === -1) {
+  // 用正则精确匹配 sidebar key，避免误匹配注释或其他字符串
+  const newsSectionMatch = content.match(/'\/news\/':\s*\[/);
+  const changelogSectionMatch = content.match(/'\/changelog\/':\s*\[/);
+  if (!newsSectionMatch || !changelogSectionMatch) {
     console.log('  未找到 news/changelog sidebar 区域，跳过');
     return false;
   }
+
+  const newsSectionIdx = newsSectionMatch.index;
+  const changelogSectionIdx = changelogSectionMatch.index;
 
   const sectionSlice = content.slice(newsSectionIdx, changelogSectionIdx);
 
