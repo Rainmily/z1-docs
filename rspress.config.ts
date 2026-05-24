@@ -126,6 +126,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'OPPO明日发布、Reno16首销2999元起（5月24日上午）', link: '/news/daily-report-2026-05-24-am' },
+            { text: 'OPPO Reno16明日发布、', link: '/news/daily-report-2026-05-24-pm' },
             { text: '华为销量破600万、618', link: '/news/daily-report-2026-05-24' },
             { text: 'iPhone17系列激活破3000万、小米618让利16亿（5月23日上午）', link: '/news/daily-report-2026-05-23-am' },
             { text: '苹果Q1首登全球出货榜首、iPhone18贴膜曝光（5月23日傍晚）', link: '/news/daily-report-2026-05-23-pm' },
