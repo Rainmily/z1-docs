@@ -3,6 +3,10 @@ name: 🚀 Deploy Docs + Auth Server
 on:
   push:
     branches: [master]
+    # 跳过 bot 的自动提交，避免 index 更新触发新的 deploy
+    paths-ignore:
+      - 'docs/news/index.mdx'
+      - 'rspress.config.ts'
   workflow_dispatch:
 
 concurrency:
@@ -31,6 +35,19 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: 生成行业资讯索引和侧边栏
+        run: node scripts/update-industry-news.mjs
+
+      - name: 提交索引更新（如有变更）
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "GitHub Actions"
+            git add -A
+            git commit -m "chore: 更新行业资讯索引 $(date +'%Y-%m-%d %H:%M')"
+            git push
+          fi
 
       - name: Build Rspress site
         run: npm run build
