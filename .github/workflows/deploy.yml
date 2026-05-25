@@ -39,19 +39,6 @@ jobs:
       - name: 生成行业资讯索引和侧边栏
         run: node scripts/update-industry-news.mjs
 
-      - name: 提交索引更新（如有变更）
-        run: |
-          # 只添加可能被脚本修改的文件，避免提交无关文件
-          git add docs/news/index.mdx rspress.config.ts
-          if git diff --staged --quiet; then
-            echo "没有变更，无需提交"
-          else
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "GitHub Actions"
-            git commit -m "chore: 更新行业资讯索引 $(date +'%Y-%m-%d %H:%M')"
-            git push
-          fi
-
       - name: Build Rspress site
         run: npm run build
 
