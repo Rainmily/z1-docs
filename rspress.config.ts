@@ -127,6 +127,7 @@ export default defineConfig({
           items: [
             { text: '星星周核心日：OPPO Reno16与荣耀600同天发布、vivo S60定档5/29（5月25日）', link: '/news/daily-report-2026-05-25' },
             { text: 'OPPO Reno16与荣耀600今晚18:00同天发布、vivo S60定档5/29（5月25日上午）', link: '/news/daily-report-2026-05-25-am' },
+            { text: 'OPPO Reno16系列2999元起、荣耀600系列售价待揭晓（5月25日傍晚）', link: '/news/daily-report-2026-05-25-pm' },
             { text: 'OPPO明日发布、Reno16首销2999元起（5月24日上午）', link: '/news/daily-report-2026-05-24-am' },
             { text: 'OPPO Reno16明日发布、', link: '/news/daily-report-2026-05-24-pm' },
             { text: '华为销量破600万、618', link: '/news/daily-report-2026-05-24' },
