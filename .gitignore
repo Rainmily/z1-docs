@@ -30,6 +30,9 @@ auth-users.js
 *.local
 .cache/
 
+# OpenCode temp files
+.opencode/
+
 # Claude Code settings
 .claude/
 

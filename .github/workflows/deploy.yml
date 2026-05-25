@@ -41,10 +41,13 @@ jobs:
 
       - name: 提交索引更新（如有变更）
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
+          # 只添加可能被脚本修改的文件，避免提交无关文件
+          git add docs/news/index.mdx rspress.config.ts
+          if git diff --staged --quiet; then
+            echo "没有变更，无需提交"
+          else
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
             git config --local user.name "GitHub Actions"
-            git add -A
             git commit -m "chore: 更新行业资讯索引 $(date +'%Y-%m-%d %H:%M')"
             git push
           fi

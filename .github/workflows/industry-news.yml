@@ -46,9 +46,9 @@ jobs:
           # 先 rebase 远程最新代码，冲突时退出而不是静默忽略
           git fetch origin
           git rebase origin/master && {
-            # 无冲突才 add + diff
-            git add -A
-            if git diff --quiet; then
+            # 只添加可能被脚本修改的文件
+            git add docs/news/index.mdx rspress.config.ts
+            if git diff --staged --quiet; then
               echo "没有变更，无需提交"
             else
               git commit -m "chore: 更新手机行业资讯 $(date +'%Y-%m-%d %H:%M')"
