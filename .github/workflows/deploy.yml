@@ -38,6 +38,8 @@ jobs:
 
       - name: 生成行业资讯索引和侧边栏
         run: node scripts/update-industry-news.mjs
+        env:
+          NO_GIT_PUSH: '1'
 
       - name: Build Rspress site
         run: npm run build

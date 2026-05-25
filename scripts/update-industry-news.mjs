@@ -211,9 +211,16 @@ function generateSidebar(articles) {
 // ============================================================
 
 function gitPush() {
+  // deploy workflow 里设置 NO_GIT_PUSH=1，跳过 push
+  // 仅由 cron workflow (industry-news.yml) 负责提交
+  if (process.env.NO_GIT_PUSH === '1') {
+    console.log('NO_GIT_PUSH=1，跳过 git push（deploy workflow）');
+    return;
+  }
+
   try {
     console.log('正在提交到 GitHub...');
-    execSync('git add -A', { cwd: ROOT_DIR, stdio: 'inherit' });
+    execSync('git add docs/news/index.mdx rspress.config.ts', { cwd: ROOT_DIR, stdio: 'inherit' });
     const status = execSync('git status --porcelain', { cwd: ROOT_DIR }).toString();
     if (status.trim()) {
       execSync(`git commit -m "chore: 更新行业资讯索引 ${new Date().toLocaleString('zh-CN')}"`, {
