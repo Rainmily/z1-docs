@@ -8,6 +8,9 @@ on:
       - 'docs/news/index.mdx'
       - 'rspress.config.ts'
   workflow_dispatch:
+  schedule:
+    # 每4小时定时部署一次，确保服务器始终是最新内容
+    - cron: '0 */4 * * *'
 
 concurrency:
   group: deploy
