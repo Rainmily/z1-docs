@@ -125,6 +125,9 @@ export default defineConfig({
           text: '行业资讯',
           collapsed: false,
           items: [
+            { text: 'AI技术前沿（6月9日）', link: '/news/daily-report-2026-06-09' },
+            { text: '手机行业日报（6月8日）', link: '/news/daily-report-2026-06-08' },
+            { text: '手机行业日报（6月7日）', link: '/news/daily-report-2026-06-07' },
             { text: '手机行业日报（6月4日）', link: '/news/daily-report-2026-06-04' },
             { text: '手机行业日报（5月29日上午）', link: '/news/daily-report-2026-05-29-am' },
             { text: '手机行业日报（5月29日·晚报）', link: '/news/daily-report-2026-05-29-pm' },
