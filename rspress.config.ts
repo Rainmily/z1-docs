@@ -125,6 +125,7 @@ export default defineConfig({
           text: '行业资讯',
           collapsed: false,
           items: [
+            { text: '荣耀动态速递（6月22日）', link: '/news/daily-report-2026-06-22' },
             { text: '华为动态速递（6月21日）', link: '/news/daily-report-2026-06-21-am' },
             { text: '苹果动态速递（6月21日）', link: '/news/daily-report-2026-06-21-pm' },
             { text: '苹果动态速递（6月21日）', link: '/news/daily-report-2026-06-21' },
