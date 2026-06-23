@@ -125,6 +125,7 @@ export default defineConfig({
           text: '行业资讯',
           collapsed: false,
           items: [
+            { text: '折叠屏技术前沿（6月23日）', link: '/news/daily-report-2026-06-23-am' },
             { text: '苹果动态速递（6月23日）', link: '/news/daily-report-2026-06-23' },
             { text: '折叠屏技术前沿（6月22日）', link: '/news/daily-report-2026-06-22-am' },
             { text: '荣耀动态速递（6月22日）', link: '/news/daily-report-2026-06-22-pm' },
