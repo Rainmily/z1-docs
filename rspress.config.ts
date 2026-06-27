@@ -125,6 +125,7 @@ export default defineConfig({
           text: '行业资讯',
           collapsed: false,
           items: [
+            { text: '手机行业日报（6月27日）', link: '/news/daily-report-2026-06-27' },
             { text: '荣耀动态速递（6月26日）', link: '/news/daily-report-2026-06-26-am' },
             { text: '手机行业日报（6月26日）', link: '/news/daily-report-2026-06-26-pm' },
             { text: '手机行业日报（6月26日）', link: '/news/daily-report-2026-06-26' },
