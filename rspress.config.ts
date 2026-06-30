@@ -125,6 +125,7 @@ export default defineConfig({
           text: '行业资讯',
           collapsed: false,
           items: [
+            { text: 'REDMI动态速递（6月30日）', link: '/news/daily-report-2026-06-30-pm' },
             { text: '折叠屏技术前沿（6月27日）', link: '/news/daily-report-2026-06-27-am' },
             { text: '手机行业日报（6月27日）', link: '/news/daily-report-2026-06-27' },
             { text: '荣耀动态速递（6月26日）', link: '/news/daily-report-2026-06-26-am' },
