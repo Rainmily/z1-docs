@@ -126,6 +126,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: '手机行业日报（7月1日）', link: '/news/daily-report-2026-07-01-am' },
+            { text: 'vivo动态速递（7月1日）', link: '/news/daily-report-2026-07-01-pm' },
             { text: '折叠屏技术前沿（7月1日）', link: '/news/daily-report-2026-07-01' },
             { text: 'REDMI动态速递（6月30日）', link: '/news/daily-report-2026-06-30-pm' },
             { text: '折叠屏技术前沿（6月27日）', link: '/news/daily-report-2026-06-27-am' },
