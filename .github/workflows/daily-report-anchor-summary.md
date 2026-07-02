@@ -42,9 +42,25 @@
 - 6/7 早报 → docs/news/daily-report-2026-06-07.mdx ✅ 新增
 - 6/8 早报 → docs/news/daily-report-2026-06-08.mdx ✅ 新增
 - 6/9 早报 → docs/news/daily-report-2026-06-09.mdx ✅ 新增（WWDC26+iOS 27发布）
+- 6/11 早报 → docs/news/daily-report-2026-06-11.mdx ✅ 新增（iOS 27 Beta实测+OPPO K15入网+荣耀X80 Pro Max）
+- 6/11 上午报 → docs/news/daily-report-2026-06-11-am.mdx ✅ 新增（华为nova16+小米17破508万+联想涨价）
+- 6/11 晚报 → docs/news/daily-report-2026-06-11-pm.mdx ✅ 新增（iPhone Ultra规格全曝光+MIX Fold 5万元+618战报）
+- 6/14 晚报 → docs/news/daily-report-2026-06-14-pm.mdx ✅ 新增（REDMI K100+618战报华为Mate80 670万）
+- 6/15 早报 → docs/news/daily-report-2026-06-15.mdx ✅ 新增（鸿蒙OS7 Beta+W23华为22.68%份额+vivo X Fold6）
+- 6/15 上午报 → docs/news/daily-report-2026-06-15-am.mdx ✅ 新增（小米MIX Fold5+iPhone 18 Pro Max三色机模）
+- 6/15 晚报 → docs/news/daily-report-2026-06-15-pm.mdx ✅ 新增（大疆Pocket 4P 3799元+1-5月中国畅销机型TOP20）
+- 6/16 早报 → docs/news/daily-report-2026-06-16.mdx ✅ 新增（iPhone Fold延期传闻+iPhone Ultra 9月发布+荣耀X80 1499）
+- 6/16 上午报 → docs/news/daily-report-2026-06-16-am.mdx ✅ 新增（华为擎云鸿蒙电脑+Mate 80近千万+nova 16 Ultra 4699）
+- 6/16 晚报 → docs/news/daily-report-2026-06-16-pm.mdx ✅ 新增（Pura X Max+荣耀Q1马来西亚登顶+荣耀X80 Pro Max）
+- 6/17 早报 → docs/news/daily-report-2026-06-17.mdx ✅ 新增（iPhone Ultra 14999+iPhone 17国补4499+MacBook Ultra）
+- 6/17 上午报 → docs/news/daily-report-2026-06-17-am.mdx ✅ 新增（iPhone Ultra六大创新+小米18节奏调整+一加16细节+OV超大杯2027）
+- 6/17 晚报 → docs/news/daily-report-2026-06-17-pm.mdx ✅ 新增（京东618终极战报+REDMI K100 10000mAh+苹果单品销量前三+国产TOP10+2026前5月旗舰TOP30）
+- 6/18 早报 → docs/news/daily-report-2026-06-18.mdx ✅ 新增（库克发声苹果将涨价+iPhone Air 2明春+iPhone 20周年纪念款+华为Mate 90提档9月+京东618终极28小时战报+2026前5月国产TOP30）
+- 6/18 上午报 → docs/news/daily-report-2026-06-18-am.mdx ✅ 新增（小米MIX Fold 5入网+玄戒O3自研芯片+澎湃OS 4+REDMI K100提档9月+10000mAh+iPhone 18 Pro涨200美元+三星Z Fold8系列下月发布+618"最安静"一年）
+- 6/18 晚报 → docs/news/daily-report-2026-06-18-pm.mdx ✅ 新增（小米618全渠道263亿同比+90%+Pura X Max成华为最强折叠屏+iPhone Ultra延期辟谣9月发布11月开售+荣耀X80 Pro Max 6/22发布+REDMI Turbo 5 Max国产销量第一+京东618终极28小时战报+OPPO Find N6横评领衔+2026前5月国产单品TOP10）
 
 ### In Progress
-- (none)
+- 6/19 早 8:00 早报 cron 待触发（任务已收到）
 
 ### Blocked
 - (none)
