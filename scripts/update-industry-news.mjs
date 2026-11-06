@@ -220,7 +220,8 @@ function gitPush() {
 
   try {
     console.log('正在提交到 GitHub...');
-    execSync('git add docs/news/index.mdx rspress.config.ts', { cwd: ROOT_DIR, stdio: 'inherit' });
+    // 必须把文章正文(.mdx)一并提交，否则 index/sidebar 会指向线上不存在的路由
+    execSync('git add docs/news/index.mdx rspress.config.ts docs/news/*.mdx', { cwd: ROOT_DIR, stdio: 'inherit' });
     const status = execSync('git status --porcelain', { cwd: ROOT_DIR }).toString();
     if (status.trim()) {
       execSync(`git commit -m "chore: 更新行业资讯索引 ${new Date().toLocaleString('zh-CN')}"`, {
@@ -270,11 +271,9 @@ function main() {
   const sidebarChanged = generateSidebar(articles);
   console.log(sidebarChanged ? '  sidebar 已更新' : '  sidebar 无变化');
 
-  if (indexChanged || sidebarChanged) {
-    gitPush();
-  } else {
-    console.log('无变更，无需推送');
-  }
+  // 无论索引是否有变化都要走 gitPush：新文章正文同样需要提交，
+  // gitPush 内部会自行判断工作区是否干净，无变更时不做任何操作。
+  gitPush();
 
   console.log('='.repeat(50));
   console.log('更新完成!', new Date().toLocaleString('zh-CN'));

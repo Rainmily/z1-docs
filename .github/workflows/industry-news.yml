@@ -46,8 +46,8 @@ jobs:
           # 先 rebase 远程最新代码，冲突时退出而不是静默忽略
           git fetch origin
           git rebase origin/master && {
-            # 只添加可能被脚本修改的文件
-            git add docs/news/index.mdx rspress.config.ts
+            # 只添加可能被脚本修改的文件（文章正文也必须提交，否则线上缺少对应路由）
+            git add docs/news/index.mdx rspress.config.ts docs/news/*.mdx
             if git diff --staged --quiet; then
               echo "没有变更，无需提交"
             else
